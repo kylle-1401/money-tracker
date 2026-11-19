@@ -3,6 +3,7 @@ import EmptyState from '../../components/EmptyState.tsx';
 import TransactionRow from './TransactionRow.tsx';
 import { dayLabel } from '../../lib/dates.ts';
 import { formatMinor } from '../../lib/money.ts';
+import { useCurrency } from '../settings/currencyContext.ts';
 import { useCategoryMap, useTransactions } from './hooks.ts';
 import { groupByDay } from './groupByDay.ts';
 import styles from './TransactionsPage.module.css';
@@ -11,6 +12,7 @@ import styles from './TransactionsPage.module.css';
 export default function TransactionsPage() {
   const transactions = useTransactions();
   const categories = useCategoryMap();
+  const currency = useCurrency();
 
   let body;
   if (transactions === undefined || categories === undefined) {
@@ -36,7 +38,7 @@ export default function TransactionsPage() {
             </h2>
             <span className={styles.dayNet}>
               {group.netMinor >= 0 ? '+' : '−'}
-              {formatMinor(Math.abs(group.netMinor))}
+              {formatMinor(Math.abs(group.netMinor), currency)}
             </span>
           </div>
           <ul className={styles.list}>

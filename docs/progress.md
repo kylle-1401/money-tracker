@@ -29,11 +29,22 @@
   - 106 tests pass; lint, typecheck, format, build and audit are clean
   - Browser pane at 390×844 with 12 demo entries: the numbers match a hand calculation, previous month works, light and dark OK, no horizontal scroll, no console errors
 
+  - Committed `b0eb167`.
+- 2026-11-19: **Slice 3 (settings)** on branch `feature/3-settings`, not committed yet:
+  - Currency picker (10 currencies that use 2 decimals; JPY/KRW are left out because amounts are stored in hundredths). It's display only, with no conversion. Saved in the `settings` table and shared app-wide through `CurrencyProvider`
+  - Category lists per type (active first, archived labelled), plus add/edit page: name, emoji quick picks or any typed emoji, archive/restore, delete only when unused (otherwise "Used by N transactions… archive instead")
+  - Rules enforced in `categoryRepository` too: name required, at most 30 characters, unique per type (case-insensitive); type fixed after creation; delete is blocked inside a DB transaction if used
+  - Refactor: shared `FullScreenPage` + `useGoBack` + `forms.module.css`; removed `TransactionFormPage.module.css`
+  - `vite.config.ts`: `chunkSizeWarningLimit: 700` (bundle 507 KB raw / 159 KB gzipped; one cached offline bundle, so splitting has little value)
+  - The category `color` field is now unused by the UI (bars use one hue). It's kept for future charts and not editable
+  - 132 tests pass; lint, typecheck, format, build and audit are clean
+  - Browser pane at 390×844: Settings list, added "Pets 🐶" (dark mode), switched to USD → Home shows $ with the same numbers, switched back to PHP; no console errors
+
 ## In progress
-- Waiting for review of slice 2.
+- Waiting for review of slice 3.
 
 ## Next
-- Slice 3: settings (currency picker, add/rename/archive categories).
+- Slice 4: backup (export JSON/CSV, import JSON with preview, 30-day backup reminder).
 
 ## Decisions / notes
 - ESLint is pinned to 9, because `eslint-plugin-jsx-a11y` doesn't support ESLint 10 yet. ESLint 9 shows as deprecated in npm. Revisit when jsx-a11y supports 10.

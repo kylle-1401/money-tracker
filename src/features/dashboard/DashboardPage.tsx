@@ -5,6 +5,7 @@ import AmountText from '../../components/AmountText.tsx';
 import { addMonths, currentMonthKey, monthLabel, type MonthKey } from '../../lib/dates.ts';
 import { formatMinor } from '../../lib/money.ts';
 import { useCategoryMap, useTransactions } from '../transactions/hooks.ts';
+import { useCurrency } from '../settings/currencyContext.ts';
 import TransactionRow from '../transactions/TransactionRow.tsx';
 import SpendingBars from './SpendingBars.tsx';
 import { balanceMinor, monthTotals, spendingByCategory } from './summary.ts';
@@ -21,6 +22,7 @@ const RECENT_COUNT = 5;
 export default function DashboardPage() {
   const transactions = useTransactions();
   const categories = useCategoryMap();
+  const currency = useCurrency();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const thisMonth = currentMonthKey();
@@ -63,7 +65,7 @@ export default function DashboardPage() {
           </h2>
           <p className={styles.balance}>
             {balance < 0 && '−'}
-            {formatMinor(Math.abs(balance))}
+            {formatMinor(Math.abs(balance), currency)}
           </p>
           <p className={styles.muted}>All time</p>
         </section>
@@ -107,7 +109,7 @@ export default function DashboardPage() {
         </div>
         <p className={styles.net}>
           {net >= 0 ? 'Saved ' : 'Overspent '}
-          <strong>{formatMinor(Math.abs(net))}</strong> in {label}
+          <strong>{formatMinor(Math.abs(net), currency)}</strong> in {label}
         </p>
 
         <section className={styles.card} aria-labelledby="where-label">

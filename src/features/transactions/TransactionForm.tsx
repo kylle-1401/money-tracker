@@ -4,6 +4,8 @@ import { parseAmountToMinor } from '../../lib/money.ts';
 import type { TransactionInput } from './transactionRepository.ts';
 import { transactionFormSchema, type TransactionFormValues } from './transactionSchema.ts';
 import { usePickableCategories } from './hooks.ts';
+import { useCurrency } from '../settings/currencyContext.ts';
+import { currencySymbol } from '../settings/currencies.ts';
 import styles from './TransactionForm.module.css';
 
 interface TransactionFormProps {
@@ -37,6 +39,7 @@ export default function TransactionForm({
   const type = useWatch({ control, name: 'type' });
   const selectedCategoryId = useWatch({ control, name: 'categoryId' });
   const categories = usePickableCategories(type);
+  const symbol = currencySymbol(useCurrency());
 
   const submit = handleSubmit(async (values) => {
     // Schema already guarantees the amount parses; the check keeps TypeScript honest.
@@ -83,7 +86,7 @@ export default function TransactionForm({
         </label>
         <div className={styles.amountWrap}>
           <span className={styles.currency} aria-hidden="true">
-            ₱
+            {symbol}
           </span>
           <input
             id="amount"

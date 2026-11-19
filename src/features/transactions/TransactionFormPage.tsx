@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { toLocalDateString } from '../../lib/dates.ts';
 import { minorToInput } from '../../lib/money.ts';
+import { useGoBack } from '../../lib/useGoBack.ts';
 import EmptyState from '../../components/EmptyState.tsx';
+import FullScreenPage from '../../components/FullScreenPage.tsx';
 import TransactionForm from './TransactionForm.tsx';
 import { useTransaction } from './hooks.ts';
 import {
@@ -11,7 +12,7 @@ import {
   updateTransaction,
   type TransactionInput,
 } from './transactionRepository.ts';
-import styles from './TransactionFormPage.module.css';
+import forms from '../../components/forms.module.css';
 
 /**
  * Full-screen add (/transactions/new) or edit (/transactions/:id) page.
@@ -21,22 +22,7 @@ export default function TransactionFormPage() {
   const { id } = useParams();
   const isEdit = id !== undefined;
   const existing = useTransaction(id);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const headingRef = useRef<HTMLHeadingElement>(null);
-
-  useEffect(() => {
-    headingRef.current?.focus({ preventScroll: true });
-  }, []);
-
-  /** Back to where the user came from; if they opened this URL directly, go to the list. */
-  function goBack() {
-    if (location.key !== 'default') {
-      void navigate(-1);
-    } else {
-      void navigate('/transactions', { replace: true });
-    }
-  }
+  const goBack = useGoBack('/transactions');
 
   async function handleSave(input: TransactionInput) {
     if (isEdit) {
@@ -55,12 +41,10 @@ export default function TransactionFormPage() {
     goBack();
   }
 
-  const title = isEdit ? 'Edit transaction' : 'New transaction';
-
   let body;
   if (isEdit && existing === undefined) {
     body = (
-      <p className={styles.muted} role="status">
+      <p className={forms.muted} role="status">
         Loading…
       </p>
     );
@@ -93,7 +77,7 @@ export default function TransactionFormPage() {
           onSubmit={handleSave}
         />
         {isEdit && (
-          <button type="button" className={styles.danger} onClick={() => void handleDelete()}>
+          <button type="button" className={forms.danger} onClick={() => void handleDelete()}>
             Delete transaction
           </button>
         )}
@@ -102,17 +86,8 @@ export default function TransactionFormPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <button type="button" className={styles.cancel} onClick={goBack}>
-          Cancel
-        </button>
-        <h1 ref={headingRef} tabIndex={-1} className={styles.title}>
-          {title}
-        </h1>
-        <span className={styles.spacer} aria-hidden="true" />
-      </header>
-      <main className={styles.main}>{body}</main>
-    </div>
+    <FullScreenPage title={isEdit ? 'Edit transaction' : 'New transaction'} onCancel={goBack}>
+      {body}
+    </FullScreenPage>
   );
 }

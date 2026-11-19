@@ -38,27 +38,6 @@
   outline: none;
 }
 
-.spacer {
-  justify-self: end;
-}
-
 .main {
   padding: var(--space-3) var(--space-4) var(--space-4);
-}
-
-.muted {
-  color: var(--text-muted);
-}
-
-.danger {
-  width: 100%;
-  min-height: var(--tap-min);
-  margin-top: var(--space-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--expense);
-  font-size: var(--text-md);
-  font-weight: 600;
-  cursor: pointer;
 }

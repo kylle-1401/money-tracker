@@ -1,0 +1,33 @@
+/* Shared form pieces for full-screen pages (buttons and status text below a form). */
+
+.muted {
+  color: var(--text-muted);
+}
+
+.danger,
+.secondary {
+  width: 100%;
+  min-height: var(--tap-min);
+  margin-top: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.danger {
+  color: var(--expense);
+}
+
+.secondary {
+  color: var(--accent);
+}
+
+.hint {
+  margin-top: var(--space-2);
+  padding: 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

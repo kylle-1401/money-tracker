@@ -1,4 +1,5 @@
 import { formatMinor } from '../../lib/money.ts';
+import { useCurrency } from '../settings/currencyContext.ts';
 import type { CategorySpend } from './summary.ts';
 import styles from './SpendingBars.module.css';
 
@@ -15,6 +16,7 @@ interface SpendingBarsProps {
  * so it matches the printed percent. The figures are text, so the bars are aria-hidden.
  */
 export default function SpendingBars({ rows }: SpendingBarsProps) {
+  const currency = useCurrency();
   return (
     <ul className={styles.list}>
       {rows.map((row) => (
@@ -24,7 +26,7 @@ export default function SpendingBars({ rows }: SpendingBarsProps) {
               <span aria-hidden="true">{row.emoji}</span> {row.name}
             </span>
             <span className={styles.figures}>
-              <span className={styles.amount}>{formatMinor(row.amountMinor)}</span>
+              <span className={styles.amount}>{formatMinor(row.amountMinor, currency)}</span>
               <span className={styles.percent}>{row.percent}%</span>
             </span>
           </div>

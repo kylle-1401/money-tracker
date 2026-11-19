@@ -1,0 +1,24 @@
+.shell {
+  /* dvh, not vh: on iPhone Safari 100vh is taller than the visible area when the
+     toolbar is showing, which would push content under the tab bar. */
+  min-height: 100dvh;
+  max-width: var(--app-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.main {
+  flex: 1;
+  padding: calc(var(--safe-top) + var(--space-4)) var(--space-4)
+    calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-5));
+}
+
+/* Desktop: give the phone column an edge so it doesn't float on a plain background */
+@media (min-width: 600px) {
+  .shell {
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+}

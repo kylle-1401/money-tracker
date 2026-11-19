@@ -19,11 +19,21 @@
   - 79 tests pass; lint, typecheck, format, build and audit are clean
   - Browser pane at 390×844: add → shows under Today; reload keeps it; edit loads 245.50; an invalid amount (1.234) shows an error; delete → empty state; dark mode OK; no console errors
 
+  - Committed `d8117a8`.
+- 2026-11-19: **Slice 2 (dashboard)** on branch `feature/2-dashboard`, not committed yet:
+  - All-time balance (hero figure), month switcher (month kept in the URL `?month=YYYY-MM`; next is disabled at the current month), Money in/out tiles, "Saved/Overspent ₱X in <month>"
+  - "Where your money went" as **ranked horizontal bars** (one hue, name + amount + %), largest first, instead of the planned donut. **Recharts was dropped**: no new package, and the bundle grew about 2 KB instead of about 100 KB
+  - Recent 5 with "See all"; `TransactionRow` is shared by the List and Home pages
+  - Pure `summary.ts` (balance, month totals, spending by category) and month helpers in `dates.ts`, all unit-tested
+  - Fixed: the + button covered the last row at the bottom of the page (extra bottom padding on pages with the button)
+  - 106 tests pass; lint, typecheck, format, build and audit are clean
+  - Browser pane at 390×844 with 12 demo entries: the numbers match a hand calculation, previous month works, light and dark OK, no horizontal scroll, no console errors
+
 ## In progress
-- Waiting for review of slice 1.
+- Waiting for review of slice 2.
 
 ## Next
-- Slice 2: dashboard (month switcher, balance, In/Out tiles, category donut with Recharts, recent 5). Needs the `recharts` package (approved in the plan).
+- Slice 3: settings (currency picker, add/rename/archive categories).
 
 ## Decisions / notes
 - ESLint is pinned to 9, because `eslint-plugin-jsx-a11y` doesn't support ESLint 10 yet. ESLint 9 shows as deprecated in npm. Revisit when jsx-a11y supports 10.

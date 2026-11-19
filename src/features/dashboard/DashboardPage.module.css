@@ -1,0 +1,141 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.card,
+.balanceCard,
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.card {
+  padding: var(--space-4);
+}
+
+.cardLabel {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Hero figure: the one number the dashboard leads with */
+.balanceCard {
+  padding: var(--space-5) var(--space-4);
+}
+
+.balance {
+  margin: var(--space-1) 0;
+  /* Scales down so a long amount (₱1,234,567.89) still fits on an iPhone */
+  font-size: clamp(2rem, 11vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.monthNav {
+  display: grid;
+  grid-template-columns: var(--tap-min) 1fr var(--tap-min);
+  align-items: center;
+}
+
+.monthButton {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.monthButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.monthLabel {
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.tile > span {
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.net {
+  margin-top: calc(var(--space-2) * -1);
+  padding: 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.net strong {
+  color: var(--text);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.card .sectionTitle {
+  margin-bottom: var(--space-4);
+}
+
+.sectionTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.seeAll {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.recentList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.recentList li + li {
+  border-top: 1px solid var(--border);
+}

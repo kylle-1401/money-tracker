@@ -15,6 +15,11 @@
     calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-5));
 }
 
+/* Extra room at the end of pages with the + button, so it never covers the last row */
+.withFab {
+  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 60px + var(--space-6));
+}
+
 /* Floating add button: bottom-right, just above the tab bar, inside the phone column */
 .fab {
   position: fixed;

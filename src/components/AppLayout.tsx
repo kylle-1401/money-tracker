@@ -13,13 +13,14 @@ const pagesWithAddButton = new Set(['/', '/transactions']);
  */
 export default function AppLayout() {
   const { pathname } = useLocation();
+  const showAddButton = pagesWithAddButton.has(pathname);
 
   return (
     <div className={styles.shell}>
-      <main className={styles.main}>
+      <main className={showAddButton ? `${styles.main} ${styles.withFab}` : styles.main}>
         <Outlet />
       </main>
-      {pagesWithAddButton.has(pathname) && (
+      {showAddButton && (
         <Link to="/transactions/new" className={styles.fab} aria-label="Add transaction">
           <PlusIcon />
         </Link>

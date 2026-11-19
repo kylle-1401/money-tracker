@@ -18,6 +18,9 @@
   --income: #15803d;
   --expense: #c2410c;
   --focus: #2563eb;
+  /* Charts: one hue for ranked bars (dataviz reference palette, blue slot) */
+  --chart-bar: #2a78d6;
+  --chart-track: #e1e0d9;
 
   /* Type: system font = SF Pro on iPhone, nothing to download */
   --font:
@@ -59,5 +62,7 @@
     --income: #4ade80;
     --expense: #fb923c;
     --focus: #8fb0ff;
+    --chart-bar: #3987e5;
+    --chart-track: #2c313a;
   }
 }

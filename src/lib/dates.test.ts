@@ -1,5 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { dayLabel, isValidDateString, toLocalDateString } from './dates.ts';
+import {
+  addMonths,
+  currentMonthKey,
+  dayLabel,
+  isValidDateString,
+  monthKeyOf,
+  monthLabel,
+  toLocalDateString,
+} from './dates.ts';
+
+describe('month helpers', () => {
+  it('monthKeyOf_Date_ReturnsYearMonth', () => {
+    expect(monthKeyOf('2026-11-19')).toBe('2026-11');
+  });
+
+  it('currentMonthKey_UsesLocalDate', () => {
+    expect(currentMonthKey(new Date(2026, 0, 31, 23, 59))).toBe('2026-01');
+  });
+
+  it.each([
+    ['2026-11', 1, '2026-12'],
+    ['2026-12', 1, '2027-01'],
+    ['2026-01', -1, '2025-12'],
+    ['2026-03', -14, '2025-01'],
+    ['2026-05', 0, '2026-05'],
+  ])('addMonths_%s_plus_%i_Is_%s', (key, delta, expected) => {
+    expect(addMonths(key, delta)).toBe(expected);
+  });
+
+  it('monthLabel_ReturnsLongMonthAndYear', () => {
+    expect(monthLabel('2026-11')).toBe('November 2026');
+  });
+});
 
 describe('toLocalDateString', () => {
   it('toLocalDateString_UsesLocalCalendarDate_PadsMonthAndDay', () => {

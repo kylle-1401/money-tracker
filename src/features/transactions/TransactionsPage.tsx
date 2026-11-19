@@ -1,7 +1,6 @@
-import { Link } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader.tsx';
 import EmptyState from '../../components/EmptyState.tsx';
-import AmountText from '../../components/AmountText.tsx';
+import TransactionRow from './TransactionRow.tsx';
 import { dayLabel } from '../../lib/dates.ts';
 import { formatMinor } from '../../lib/money.ts';
 import { useCategoryMap, useTransactions } from './hooks.ts';
@@ -41,25 +40,11 @@ export default function TransactionsPage() {
             </span>
           </div>
           <ul className={styles.list}>
-            {group.items.map((tx) => {
-              const category = categories.get(tx.categoryId);
-              return (
-                <li key={tx.id}>
-                  <Link to={`/transactions/${tx.id}`} className={styles.row}>
-                    <span className={styles.emoji} aria-hidden="true">
-                      {category?.emoji ?? '❔'}
-                    </span>
-                    <span className={styles.text}>
-                      <span className={styles.category}>
-                        {category?.name ?? 'Unknown category'}
-                      </span>
-                      {tx.note && <span className={styles.note}>{tx.note}</span>}
-                    </span>
-                    <AmountText amountMinor={tx.amountMinor} type={tx.type} />
-                  </Link>
-                </li>
-              );
-            })}
+            {group.items.map((tx) => (
+              <li key={tx.id}>
+                <TransactionRow transaction={tx} category={categories.get(tx.categoryId)} />
+              </li>
+            ))}
           </ul>
         </section>
       );

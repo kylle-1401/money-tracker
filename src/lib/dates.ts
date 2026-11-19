@@ -61,3 +61,31 @@ export function dayLabel(value: string, now: Date = new Date()): string {
     ? sameYearFormat.format(date)
     : otherYearFormat.format(date);
 }
+
+/** A calendar month as "YYYY-MM". Transactions belong to the month of their date. */
+export type MonthKey = string;
+
+/** The month a "YYYY-MM-DD" date falls in. */
+export function monthKeyOf(date: string): MonthKey {
+  return date.slice(0, 7);
+}
+
+/** The current local month. */
+export function currentMonthKey(now: Date = new Date()): MonthKey {
+  return monthKeyOf(toLocalDateString(now));
+}
+
+/** Moves a month key forward (positive) or back (negative), crossing years correctly. */
+export function addMonths(key: MonthKey, delta: number): MonthKey {
+  const [y, m] = key.split('-').map(Number) as [number, number];
+  const date = new Date(y, m - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+const monthFormat = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' });
+
+/** "November 2026". */
+export function monthLabel(key: MonthKey): string {
+  const [y, m] = key.split('-').map(Number) as [number, number];
+  return monthFormat.format(new Date(y, m - 1, 1));
+}

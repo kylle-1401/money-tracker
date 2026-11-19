@@ -131,7 +131,7 @@ Each slice gets its own branch (`feature/<n>-<name>`), passes lint, typecheck, t
 |---|---|---|
 | 0 | **Scaffold** | Vite + TS strict + ESLint/Prettier + Vitest set up. App shell with bottom tabs (3 empty pages), design tokens, dark mode. All checks green. |
 | 1 | **Transactions** | Dexie schema with seeded categories. Add/edit/delete form (validated with Zod). List grouped by day, with empty state. `money.ts` and `dates.ts` fully unit-tested. Data survives a reload. |
-| 2 | **Dashboard** | Month switcher, balance, In/Out tiles, category donut with legend (amounts and %), recent 5, and an empty state for a new user. |
+| 2 | **Dashboard** | Month switcher, balance, In/Out tiles, spending per category as ranked horizontal bars (amounts and %), recent 5, and an empty state for a new user. *(Changed from a donut during the build: bars compare up to 8 categories more clearly and need no chart library, so Recharts was dropped.)* |
 | 3 | **Settings** | Currency picker. Add, rename and archive categories (emoji and color). |
 | 4 | **Backup** | Export JSON (full backup) and CSV (for spreadsheets). Import JSON with validation and a preview ("Import 214 transactions?"), with a choice to replace or merge. A reminder appears if there has been no backup in 30 days. |
 | 5 | **PWA** | Manifest, icons (including the Apple touch icon), offline service worker, an "Add to Home Screen" hint on iOS Safari, and an "update available" prompt. Tested offline with `npm run preview`. |

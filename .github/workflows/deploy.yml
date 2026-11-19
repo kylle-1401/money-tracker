@@ -1,0 +1,61 @@
+# Checks every pull request, and deploys main to GitHub Pages.
+#
+# One-time setup in the GitHub repo: Settings → Pages → Build and deployment →
+# Source: "GitHub Actions". No secrets are needed: the app is static and has no backend.
+name: Check and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # manual "Run workflow" button
+
+# Least privilege: read the code; Pages write + OIDC token only for the deploy job.
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push cancels an in-progress PR check, but never
+# cancels a production deploy halfway.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+
+      - name: Upload site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    # Only main (or a manual run) goes live; pull requests stop after the checks.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

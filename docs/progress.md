@@ -75,11 +75,20 @@
   - **`npm audit`: 4 moderate** advisories, all in `workbox-build` → `glob`/`minimatch` (build-time only, runs on our own files, never shipped to the browser). npm's fix is a breaking downgrade. Decision pending with the owner
   - **Not verified: offline mode.** The in-app browser pane can't register any service worker (even a one-line probe fails with "unknown error when fetching the script"). Verify in real Chrome or on the iPhone after deploy
 
+  - Committed `2983765`. The owner continued without objecting to the audit note (treated as accepted for now; recheck when workbox-build updates)
+- 2026-11-19: **Slice 6 (deploy)** on branch `feature/6-deploy`, not committed yet:
+  - `.github/workflows/deploy.yml`: on PRs runs `npm ci`, lint, typecheck, format, tests, build; on push to `main` (or manual run) also uploads `dist/` and deploys with `actions/deploy-pages`. Least-privilege permissions; no secrets needed
+  - `README.md`: iPhone install steps, backup/privacy notes (unencrypted backups), dev and deploy instructions
+  - Verified locally: the full CI step chain passes from a clean `npm ci`. The lockfile includes the Linux build bindings (rolldown, rollup, lightningcss)
+  - **Not verified:** the workflow on GitHub itself (needs the repo)
+
 ## In progress
-- Waiting for review of slice 5.
+- Waiting for the owner: create the GitHub repo and set Pages → Source: GitHub Actions; approve merging the slices into `main` and the first push/publish.
 
 ## Next
-- Slice 6: deploy to GitHub Pages (GitHub Actions workflow). The owner creates the GitHub repo; push only on request.
+- After the first deploy: install on the iPhone from the Pages URL, then test Airplane Mode, the install tip, the share sheet and the date picker.
+- Slice 7: desktop layout.
+- Follow-ups: paging for long transaction lists; recheck the `npm audit` advisories.
 
 ## Decisions / notes
 - ESLint is pinned to 9, because `eslint-plugin-jsx-a11y` doesn't support ESLint 10 yet. ESLint 9 shows as deprecated in npm. Revisit when jsx-a11y supports 10.

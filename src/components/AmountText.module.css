@@ -1,0 +1,13 @@
+.amount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.income {
+  color: var(--income);
+}
+
+.expense {
+  color: var(--text);
+}

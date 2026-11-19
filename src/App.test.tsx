@@ -49,10 +49,11 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument();
   });
 
-  it('App_NewUser_ShowsEmptyStateNotBlankPage', () => {
+  it('App_NewUser_ShowsEmptyStateNotBlankPage', async () => {
     renderAt('/transactions');
 
-    expect(screen.getByRole('heading', { name: 'No transactions yet' })).toBeInTheDocument();
+    // The list reads from IndexedDB, so the empty state appears after loading.
+    expect(await screen.findByRole('heading', { name: 'No transactions yet' })).toBeInTheDocument();
   });
 
   it('TabBar_Always_IsLabelledNavigation', () => {

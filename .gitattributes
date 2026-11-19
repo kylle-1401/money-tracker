@@ -1,0 +1,5 @@
+# Keep LF in the repo and working copy so Prettier (endOfLine: lf) passes on Windows
+# machines that have core.autocrlf=true.
+* text=auto eol=lf
+*.png binary
+*.ico binary

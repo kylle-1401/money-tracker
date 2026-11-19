@@ -34,6 +34,15 @@ export function ListIcon() {
   );
 }
 
+/** Plus icon for the add button. */
+export function PlusIcon() {
+  return (
+    <svg {...base} strokeWidth={2.5}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 /** Gear icon for the Settings tab. */
 export function SettingsIcon() {
   return (

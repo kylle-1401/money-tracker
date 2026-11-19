@@ -1,0 +1,209 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.row > .field {
+  flex: 1;
+}
+
+.label {
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.muted {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.error {
+  color: var(--expense);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+/* Expense / Income toggle */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.segment {
+  position: relative;
+}
+
+.segment input,
+.categoryTile input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.segment span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.segment input:checked + span {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+
+.segment input:focus-visible + span,
+.categoryTile:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Big amount */
+.amountWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.amountWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.currency {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.amount {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: var(--text-xxl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount:focus {
+  outline: none; /* the wrapper shows focus */
+}
+
+/* Category tiles: 4 per row on iPhone 14 */
+.categoryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.categoryTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 76px;
+  padding: var(--space-2) var(--space-1);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+/* Selected = thicker accent border + bold label (not color alone) */
+.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.selected .categoryName {
+  font-weight: 700;
+}
+
+.emoji {
+  font-size: 1.625rem;
+  line-height: 1;
+}
+
+.categoryName {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  /* Long single words ("Entertainment") hyphenate instead of breaking at a random letter */
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.input {
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md); /* >=16px: no iOS zoom on focus */
+}
+
+.input[aria-invalid='true'],
+.amountWrap:has([aria-invalid='true']) {
+  border-color: var(--expense);
+}
+
+/* Save button stays in thumb reach above the home indicator */
+.actions {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-3) 0 calc(var(--safe-bottom) + var(--space-3));
+  background: linear-gradient(transparent, var(--bg) 30%);
+}
+
+.primary {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: var(--text-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  opacity: 0.6;
+}

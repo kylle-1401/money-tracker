@@ -15,6 +15,32 @@
     calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-5));
 }
 
+/* Floating add button: bottom-right, just above the tab bar, inside the phone column */
+.fab {
+  position: fixed;
+  bottom: calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-4));
+  right: max(var(--space-4), calc((100vw - var(--app-max-width)) / 2 + var(--space-4)));
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+}
+
+.fab svg {
+  width: 30px;
+  height: 30px;
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
 /* Desktop: give the phone column an edge so it doesn't float on a plain background */
 @media (min-width: 600px) {
   .shell {

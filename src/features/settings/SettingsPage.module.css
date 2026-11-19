@@ -1,5 +1,6 @@
 /* iOS Settings-style grouped lists */
-.section + .section {
+/* Space between sections (BackupSection is a <section> with its own module, so match by element) */
+.section:not(:first-of-type) {
   margin-top: var(--space-6);
 }
 

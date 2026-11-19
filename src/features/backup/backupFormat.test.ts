@@ -1,0 +1,130 @@
+import { describe, expect, it } from 'vitest';
+import { defaultCategories } from '../../db/seed.ts';
+import { first } from '../../test/helpers.ts';
+import { BACKUP_VERSION, parseBackup, serializeBackup, type Backup } from './backupFormat.ts';
+
+function firstTx(b: Record<string, unknown>) {
+  return first(b.transactions as Array<Record<string, unknown>>);
+}
+
+function validBackup(): Backup {
+  return {
+    app: 'money-tracker',
+    version: BACKUP_VERSION,
+    exportedAt: '2026-11-19T08:00:00.000Z',
+    currency: 'PHP',
+    categories: defaultCategories.map((c) => ({ ...c })),
+    transactions: [
+      {
+        id: 't1',
+        type: 'expense',
+        amountMinor: 24550,
+        categoryId: 'expense-food',
+        date: '2026-11-19',
+        note: 'Jollibee',
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ],
+  };
+}
+
+function parseEdited(edit: (b: Record<string, unknown>) => void) {
+  const backup = JSON.parse(serializeBackup(validBackup())) as Record<string, unknown>;
+  edit(backup);
+  return parseBackup(JSON.stringify(backup));
+}
+
+describe('parseBackup', () => {
+  it('parseBackup_ValidFile_RoundTrips', () => {
+    const result = parseBackup(serializeBackup(validBackup()));
+
+    expect(result).toEqual({ ok: true, backup: validBackup() });
+  });
+
+  it('parseBackup_NotJson_ExplainsIt', () => {
+    expect(parseBackup('hello')).toEqual({
+      ok: false,
+      error: expect.stringContaining('valid JSON'),
+    });
+  });
+
+  it('parseBackup_OtherAppJson_Rejects', () => {
+    expect(parseBackup('{"foo": 1}')).toEqual({
+      ok: false,
+      error: 'This file isn’t a Money Tracker backup.',
+    });
+  });
+
+  it('parseBackup_NewerVersion_AsksToUpdate', () => {
+    const result = parseEdited((b) => (b.version = BACKUP_VERSION + 1));
+    expect(result).toEqual({ ok: false, error: expect.stringContaining('newer version') });
+  });
+
+  it.each([
+    ['zero amount', (b: Record<string, unknown>) => (firstTx(b).amountMinor = 0)],
+    ['float amount', (b: Record<string, unknown>) => (firstTx(b).amountMinor = 12.5)],
+    ['bad date', (b: Record<string, unknown>) => (firstTx(b).date = '2026-02-30')],
+    ['long note', (b: Record<string, unknown>) => (firstTx(b).note = 'x'.repeat(201))],
+    ['missing category', (b: Record<string, unknown>) => (firstTx(b).categoryId = 'nope')],
+    ['type mismatch', (b: Record<string, unknown>) => (firstTx(b).categoryId = 'income-salary')],
+    [
+      'duplicate category id',
+      (b: Record<string, unknown>) =>
+        (b.categories as unknown[]).push((b.categories as unknown[])[0]),
+    ],
+    [
+      'duplicate transaction id',
+      (b: Record<string, unknown>) =>
+        (b.transactions as unknown[]).push((b.transactions as unknown[])[0]),
+    ],
+    ['transactions not a list', (b: Record<string, unknown>) => (b.transactions = 'lots')],
+  ])('parseBackup_Damaged_%s_RejectsSafely', (_label, edit) => {
+    const result = parseEdited(edit);
+    expect(result).toEqual({ ok: false, error: expect.stringContaining('damaged or was edited') });
+  });
+
+  it.each(['a/b', 'x?y', '#z', '%E0', '', 'x'.repeat(101)])(
+    'parseBackup_UnsafeId_%j_Rejects',
+    (id) => {
+      const result = parseEdited((b) => (firstTx(b).id = id));
+      expect(result.ok).toBe(false);
+    },
+  );
+
+  it('parseBackup_DuplicateCategoryNameSameType_Rejects', () => {
+    const result = parseEdited((b) => {
+      const categories = b.categories as Array<Record<string, unknown>>;
+      categories.push({ ...first(categories), id: 'another-food', name: '  FOOD ' });
+    });
+    expect(result).toEqual({ ok: false, error: expect.stringContaining('damaged or was edited') });
+  });
+
+  it('parseBackup_ControlAndBidiChars_AreStripped', () => {
+    const result = parseEdited((b) => {
+      firstTx(b).note = 'Jolli‮bee\u0007';
+      first(b.categories as Array<Record<string, unknown>>).name = 'My ⁦  Food';
+    });
+    expect(result.ok && first(result.backup.transactions).note).toBe('Jollibee');
+    expect(result.ok && first(result.backup.categories).name).toBe('My Food');
+  });
+
+  it('parseBackup_EmojiWithZwj_IsKept', () => {
+    const family = '\u{1F468}‍\u{1F469}‍\u{1F467}';
+    const result = parseEdited(
+      (b) => (first(b.categories as Array<Record<string, unknown>>).emoji = family),
+    );
+    expect(result.ok && first(result.backup.categories).emoji).toBe(family);
+  });
+
+  it('parseBackup_UnknownCurrency_FallsBackToDefault', () => {
+    const result = parseEdited((b) => (b.currency = 'XYZ'));
+    expect(result.ok && result.backup.currency).toBe('PHP');
+  });
+
+  it('parseBackup_ScriptInNote_IsKeptAsPlainText', () => {
+    // React escapes text, so this is harmless data; the parser must not choke on it.
+    const result = parseEdited((b) => (firstTx(b).note = '<img src=x onerror=alert(1)>'));
+    expect(result.ok && result.backup.transactions[0]?.note).toBe('<img src=x onerror=alert(1)>');
+  });
+});

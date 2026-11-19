@@ -18,6 +18,8 @@
   --income: #15803d;
   --expense: #c2410c;
   --focus: #2563eb;
+  /* Status: warning tint for reminders (always paired with an icon + text) */
+  --warning: #eab308;
   /* Charts: one hue for ranked bars (dataviz reference palette, blue slot) */
   --chart-bar: #2a78d6;
   --chart-track: #e1e0d9;

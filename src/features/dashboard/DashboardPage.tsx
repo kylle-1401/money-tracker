@@ -8,6 +8,7 @@ import { useCategoryMap, useTransactions } from '../transactions/hooks.ts';
 import { useCurrency } from '../settings/currencyContext.ts';
 import TransactionRow from '../transactions/TransactionRow.tsx';
 import SpendingBars from './SpendingBars.tsx';
+import BackupReminder from '../backup/BackupReminder.tsx';
 import { balanceMinor, monthTotals, spendingByCategory } from './summary.ts';
 import styles from './DashboardPage.module.css';
 
@@ -59,6 +60,7 @@ export default function DashboardPage() {
 
     body = (
       <>
+        <BackupReminder transactions={transactions} />
         <section className={styles.balanceCard} aria-labelledby="balance-label">
           <h2 id="balance-label" className={styles.cardLabel}>
             Balance

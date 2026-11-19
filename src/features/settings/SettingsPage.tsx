@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import BackupSection from '../backup/BackupSection.tsx';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PageHeader from '../../components/PageHeader.tsx';
 import type { TxType } from '../../db/types.ts';
@@ -9,10 +10,18 @@ import { setCurrency } from './settingsRepository.ts';
 import { listCategories } from './categoryRepository.ts';
 import styles from './SettingsPage.module.css';
 
-/** Settings tab: display currency and the category lists. */
+/** Settings tab: display currency, backup, and the category lists. */
 export default function SettingsPage() {
   const currency = useCurrency();
   const [currencyError, setCurrencyError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const focusBackup = searchParams.get('focus') === 'backup';
+
+  // The Home backup reminder links here with ?focus=backup.
+  useEffect(() => {
+    // Optional call: scrollIntoView is missing in some test DOMs (jsdom).
+    if (focusBackup) document.getElementById('backup')?.scrollIntoView?.({ block: 'start' });
+  }, [focusBackup]);
 
   async function changeCurrency(code: string) {
     setCurrencyError(null);
@@ -57,6 +66,8 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+
+      <BackupSection />
 
       <CategorySection type="expense" title="Expense categories" />
       <CategorySection type="income" title="Income categories" />

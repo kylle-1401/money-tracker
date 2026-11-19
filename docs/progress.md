@@ -40,11 +40,35 @@
   - 132 tests pass; lint, typecheck, format, build and audit are clean
   - Browser pane at 390×844: Settings list, added "Pets 🐶" (dark mode), switched to USD → Home shows $ with the same numbers, switched back to PHP; no console errors
 
+  - Committed `72cfd31`.
+- 2026-11-19: **Slice 4 (backup)** on branch `feature/4-backup`, not committed yet:
+  - Settings → Backup: **Save backup** (JSON, the full restorable dataset), **Export for spreadsheets (CSV)** (one-way), **Restore from backup…** with a preview (date, counts, currency) and **Add to my data** (merge) or **Replace all my data** (confirm first)
+  - Files are handed out through the iPhone share sheet (Web Share API with files → Save to Files, AirDrop, etc.), with a download-link fallback
+  - The imported file is treated as untrusted: 20 MB cap, zod schema (types, lengths, ranges, counts, unique ids, every transaction points to a same-type category in the file), and newer-version files are refused. Import runs in one DB transaction (all or nothing)
+  - Merge: same id → the backup wins; a same-name category with a different id is folded into the existing one (no duplicate "Pets"); the currency is unchanged. Replace also restores the currency
+  - CSV: RFC 4180 quoting, formula-injection guard (`'` prefix on text starting with `= + - @`), expenses negative, UTF-8 BOM + CRLF for Excel
+  - Home reminder banner when the last backup (or, if never backed up, the oldest entry) is over 30 days old; links to `#/settings?focus=backup`. A CSV export doesn't count as a backup
+  - Fixed during testing: merging an identical backup said "Added 13 transactions"; it now reports new vs updated honestly
+  - Security review (security-reviewer agent): passed with notes. Fixed:
+    - Medium: merge could flip an existing category's type → now rejected as a conflict (all or nothing)
+    - Ids restricted to `[A-Za-z0-9_-]{1,100}` (they go into URLs)
+    - Duplicate category names per type are rejected; names normalized like the app does
+    - File-read errors and parsing now show an error and a busy state
+    - The replace confirmation states both counts; a replace with no categories re-seeds the defaults
+    - Caps lowered to 5 MB / 50,000 transactions
+    - Control and bidi characters are stripped from names, emoji and notes (ZWJ kept)
+  - **Open follow-ups from the review:**
+    - Content-Security-Policy meta tag: do it in slice 5 alongside the service worker
+    - The Transactions list renders every row: add paging or windowing before the data gets large
+    - Backups and CSVs are unencrypted plain text: tell users in the app copy or README
+  - 200 tests pass; lint, typecheck, format, build and audit are clean
+  - Browser pane at 390×844: reminder shows for 40-day-old data → Back up → save (share sheet stubbed to capture the file: 13 transactions, 13 categories) → "Last backup" updated → restore the same file → preview → merge → "Nothing new to add", count unchanged; junk file → clear error; dark mode OK; no console errors
+
 ## In progress
-- Waiting for review of slice 3.
+- Waiting for review of slice 4.
 
 ## Next
-- Slice 4: backup (export JSON/CSV, import JSON with preview, 30-day backup reminder).
+- Slice 5: PWA (manifest, icons, offline service worker, iOS "Add to Home Screen" hint, update prompt). Needs the `vite-plugin-pwa` package (approved in the plan).
 
 ## Decisions / notes
 - ESLint is pinned to 9, because `eslint-plugin-jsx-a11y` doesn't support ESLint 10 yet. ESLint 9 shows as deprecated in npm. Revisit when jsx-a11y supports 10.

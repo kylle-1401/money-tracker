@@ -7,6 +7,7 @@ import TransactionFormPage from './features/transactions/TransactionFormPage.tsx
 import SettingsPage from './features/settings/SettingsPage.tsx';
 import CategoryFormPage from './features/settings/CategoryFormPage.tsx';
 import CurrencyProvider from './features/settings/CurrencyProvider.tsx';
+import UpdatePrompt from './features/pwa/UpdatePrompt.tsx';
 
 /**
  * Route table. The router itself (HashRouter) is provided by main.tsx so tests can
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="settings/categories/:id" element={<CategoryFormPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <UpdatePrompt />
       </CurrencyProvider>
     </ErrorBoundary>
   );

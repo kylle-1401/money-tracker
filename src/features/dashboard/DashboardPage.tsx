@@ -9,6 +9,7 @@ import { useCurrency } from '../settings/currencyContext.ts';
 import TransactionRow from '../transactions/TransactionRow.tsx';
 import SpendingBars from './SpendingBars.tsx';
 import BackupReminder from '../backup/BackupReminder.tsx';
+import InstallHint from '../pwa/InstallHint.tsx';
 import { balanceMinor, monthTotals, spendingByCategory } from './summary.ts';
 import styles from './DashboardPage.module.css';
 
@@ -149,7 +150,10 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title="Home" />
-      <div className={styles.stack}>{body}</div>
+      <div className={styles.stack}>
+        <InstallHint />
+        {body}
+      </div>
     </>
   );
 }

@@ -64,11 +64,22 @@
   - 200 tests pass; lint, typecheck, format, build and audit are clean
   - Browser pane at 390×844: reminder shows for 40-day-old data → Back up → save (share sheet stubbed to capture the file: 13 transactions, 13 categories) → "Last backup" updated → restore the same file → preview → merge → "Nothing new to add", count unchanged; junk file → clear error; dark mode OK; no console errors
 
+  - Committed `64326b9`.
+- 2026-11-19: **Slice 5 (PWA)** on branch `feature/5-pwa`, not committed yet:
+  - `vite-plugin-pwa` 2.0 (+ `workbox-build`, `workbox-window`): web manifest, Workbox service worker precaching the whole app (16 files), `registerType: 'prompt'`
+  - Icons drawn by `scripts/generate-icons.mjs` (no image libraries; Node zlib): `apple-touch-icon.png` 180, `pwa-192/512`, maskable 512, `favicon.svg`
+  - `UpdatePrompt`: "Ready to work offline" and "A new version is ready → Reload / Later" (never auto-reloads mid-entry)
+  - `InstallHint` on Home for iPhone/iPad in the browser (not once installed): "Tap Share, then Add to Home Screen"; dismissal saved in `settings`
+  - **Content-Security-Policy** meta (build only): `default-src 'self'`, `connect-src 'self'` etc. Verified: the app renders, and an outside `fetch` is blocked
+  - 211 tests pass; lint, typecheck, format and build are clean
+  - **`npm audit`: 4 moderate** advisories, all in `workbox-build` → `glob`/`minimatch` (build-time only, runs on our own files, never shipped to the browser). npm's fix is a breaking downgrade. Decision pending with the owner
+  - **Not verified: offline mode.** The in-app browser pane can't register any service worker (even a one-line probe fails with "unknown error when fetching the script"). Verify in real Chrome or on the iPhone after deploy
+
 ## In progress
-- Waiting for review of slice 4.
+- Waiting for review of slice 5.
 
 ## Next
-- Slice 5: PWA (manifest, icons, offline service worker, iOS "Add to Home Screen" hint, update prompt). Needs the `vite-plugin-pwa` package (approved in the plan).
+- Slice 6: deploy to GitHub Pages (GitHub Actions workflow). The owner creates the GitHub repo; push only on request.
 
 ## Decisions / notes
 - ESLint is pinned to 9, because `eslint-plugin-jsx-a11y` doesn't support ESLint 10 yet. ESLint 9 shows as deprecated in npm. Revisit when jsx-a11y supports 10.

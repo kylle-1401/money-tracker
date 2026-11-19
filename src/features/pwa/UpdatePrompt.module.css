@@ -1,0 +1,44 @@
+/* Sits above the tab bar, inside the phone-width column */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-3));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: calc(min(100vw, var(--app-max-width)) - 2 * var(--space-4));
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
+.text {
+  flex: 1;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.primary,
+.close {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.close {
+  background: transparent;
+  color: inherit;
+}

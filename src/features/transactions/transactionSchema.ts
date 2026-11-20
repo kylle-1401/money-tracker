@@ -12,6 +12,7 @@ export const transactionFormSchema = z.object({
     .string()
     .refine((v) => parseAmountToMinor(v) !== null, 'Enter an amount above 0, up to 2 decimals.'),
   categoryId: z.string().min(1, 'Pick a category.'),
+  walletId: z.string().min(1, 'Pick a wallet.'),
   date: z.string().refine(isValidDateString, 'Pick a valid date.'),
   note: z.string().max(200, 'Keep the note under 200 characters.'),
 });

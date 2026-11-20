@@ -1,0 +1,128 @@
+.muted {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* Preview: looks like the wallet card on Home */
+.preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--wallet);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--wallet) 12%, var(--surface));
+}
+
+.previewEmoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.previewName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  font-size: var(--text-lg);
+}
+
+/* Color swatches: 8 in a row on iPhone 14, 44px tap targets */
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: var(--space-1);
+}
+
+.swatch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: var(--tap-min);
+  border: 3px solid transparent;
+  border-radius: 50%;
+  background: var(--wallet);
+  background-clip: content-box;
+  padding: 3px;
+  cursor: pointer;
+}
+
+.swatch input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Selected = ring (a shape change, not color alone) */
+.swatch:has(input:checked) {
+  border-color: var(--text);
+}
+
+.swatch:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.amountWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.amountWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.amountWrap:has([aria-invalid='true']) {
+  border-color: var(--expense);
+}
+
+.symbol {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.amount {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-min);
+  border: 0;
+  background: transparent;
+  font-size: var(--text-md); /* >=16px: no iOS zoom on focus */
+  font-variant-numeric: tabular-nums;
+}
+
+.amount:focus {
+  outline: none; /* the wrapper shows focus */
+}
+
+.owed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  font-size: var(--text-sm);
+}
+
+.owed input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+
+.moveRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}

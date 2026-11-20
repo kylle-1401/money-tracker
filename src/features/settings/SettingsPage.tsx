@@ -8,9 +8,13 @@ import { CURRENCIES } from './currencies.ts';
 import { useCurrency } from './currencyContext.ts';
 import { setCurrency } from './settingsRepository.ts';
 import { listCategories } from './categoryRepository.ts';
+import { formatMinor } from '../../lib/money.ts';
+import { useTransactions } from '../transactions/hooks.ts';
+import { useWallets } from '../wallets/hooks.ts';
+import { walletBalances } from '../dashboard/summary.ts';
 import styles from './SettingsPage.module.css';
 
-/** Settings tab: display currency, backup, and the category lists. */
+/** Settings tab: wallets, display currency, backup, and the category lists. */
 export default function SettingsPage() {
   const currency = useCurrency();
   const [currencyError, setCurrencyError] = useState<string | null>(null);
@@ -35,6 +39,8 @@ export default function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" />
+
+      <WalletSection />
 
       <section className={styles.section} aria-labelledby="currency-heading">
         <h2 id="currency-heading" className={styles.sectionTitle}>
@@ -74,6 +80,61 @@ export default function SettingsPage() {
 
       <p className={styles.footer}>Your data stays on this device. Nothing is sent anywhere.</p>
     </>
+  );
+}
+
+/** Wallets (active, then archived) with their balances and an "Add wallet" row. */
+function WalletSection() {
+  const wallets = useWallets();
+  const transactions = useTransactions();
+  const currency = useCurrency();
+  const balances =
+    wallets && transactions ? walletBalances(wallets, transactions) : new Map<string, number>();
+
+  return (
+    <section className={styles.section} aria-labelledby="wallets-heading">
+      <h2 id="wallets-heading" className={styles.sectionTitle}>
+        Wallets
+      </h2>
+      {wallets === undefined || transactions === undefined ? (
+        <p className={styles.hint} role="status">
+          Loading…
+        </p>
+      ) : (
+        <ul className={styles.group}>
+          {wallets.map((w) => {
+            const balance = balances.get(w.id) ?? 0;
+            return (
+              <li key={w.id}>
+                <Link
+                  to={`/settings/wallets/${w.id}`}
+                  className={`${styles.categoryRow} ${w.archived ? styles.archived : ''}`}
+                >
+                  <span className={styles.emoji} aria-hidden="true">
+                    {w.emoji}
+                  </span>
+                  <span className={styles.name}>{w.name}</span>
+                  {w.archived && <span className={styles.badge}>Archived</span>}
+                  <span className={`${styles.amount} ${balance < 0 ? styles.negative : ''}`}>
+                    {balance < 0 && '−'}
+                    {formatMinor(Math.abs(balance), currency)}
+                  </span>
+                  <span className={styles.chevron} aria-hidden="true">
+                    ›
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+          <li>
+            <Link to="/settings/wallets/new" className={styles.addRow}>
+              + Add wallet
+            </Link>
+          </li>
+        </ul>
+      )}
+      <p className={styles.hint}>Only a name and icon. No bank logins or account numbers.</p>
+    </section>
   );
 }
 

@@ -1,15 +1,22 @@
 import { db } from '../../db/db.ts';
-import { defaultCategories } from '../../db/seed.ts';
-import type { Category, Transaction } from '../../db/types.ts';
+import { CASH_WALLET_ID, defaultCategories } from '../../db/seed.ts';
+import type { Category, Transaction, Wallet } from '../../db/types.ts';
 import { getCurrency, setCurrency } from '../settings/settingsRepository.ts';
-import { BACKUP_APP_ID, BACKUP_VERSION, type Backup } from './backupFormat.ts';
+import {
+  BACKUP_APP_ID,
+  BACKUP_VERSION,
+  MAX_TRANSACTIONS,
+  MAX_WALLETS,
+  type Backup,
+} from './backupFormat.ts';
 
 const LAST_BACKUP_KEY = 'lastBackupAt';
 
 /** Snapshot of everything on this device, ready to save as a backup file. */
 export async function createBackup(now = new Date()): Promise<Backup> {
-  const [categories, transactions, currency] = await Promise.all([
+  const [categories, wallets, transactions, currency] = await Promise.all([
     db.categories.toArray(),
+    db.wallets.toArray(),
     db.transactions.toArray(),
     getCurrency(),
   ]);
@@ -19,6 +26,7 @@ export async function createBackup(now = new Date()): Promise<Backup> {
     exportedAt: now.toISOString(),
     currency,
     categories,
+    wallets,
     transactions,
   };
 }
@@ -41,7 +49,8 @@ export async function getLastBackupAt(): Promise<number | null> {
  * - merge: keep what's here and add the backup's entries. Same id = same entry, so
  *   the backup's version wins. A backup category whose name matches an existing
  *   category of the same type is folded into the existing one, so merging two
- *   devices doesn't create duplicate "Pets" categories.
+ *   devices doesn't create duplicate "Pets" categories. Wallets fold by name the
+ *   same way (no duplicate "GCash").
  */
 export type ImportMode = 'replace' | 'merge';
 
@@ -52,6 +61,7 @@ export interface ImportSummary {
   /** Of those, how many were new to this device (merge only; equals `transactions` on replace). */
   transactionsAdded: number;
   categoriesAdded: number;
+  walletsAdded: number;
 }
 
 /** Thrown when a merge would break existing data; the message is shown to the user. */
@@ -62,23 +72,38 @@ export class ImportConflictError extends Error {}
  * if anything fails, nothing changes.
  */
 export async function importBackup(backup: Backup, mode: ImportMode): Promise<ImportSummary> {
-  return db.transaction('rw', db.categories, db.transactions, db.settings, async () => {
+  const tables = [db.categories, db.wallets, db.transactions, db.settings];
+  return db.transaction('rw', tables, async () => {
     if (mode === 'replace') {
       await db.transactions.clear();
       await db.categories.clear();
+      await db.wallets.clear();
       // A backup with no categories would leave the app with nothing to pick, and
       // the seed only runs when the database is first created, so re-seed.
       await db.categories.bulkAdd(
         backup.categories.length > 0 ? backup.categories : defaultCategories,
       );
+      // parseBackup guarantees at least one active wallet.
+      await db.wallets.bulkAdd(backup.wallets);
       await db.transactions.bulkAdd(backup.transactions);
       await setCurrency(backup.currency);
       return {
         transactions: backup.transactions.length,
         transactionsAdded: backup.transactions.length,
         categoriesAdded: backup.categories.length,
+        walletsAdded: backup.wallets.length,
       };
     }
+
+    // A v1 file has no real wallets: parseBackup made up a default Cash for it. That
+    // stand-in must never overwrite this phone's Cash (its name, starting balance or
+    // archived state), so skip it when Cash already exists here.
+    const localCash = await db.wallets.get(CASH_WALLET_ID);
+    const incomingWallets =
+      backup.version < 2 && localCash
+        ? backup.wallets.filter((w) => w.id !== CASH_WALLET_ID)
+        : backup.wallets;
+    const walletMerge = await mergeWallets(incomingWallets);
 
     const existing = await db.categories.toArray();
     const existingById = new Map(existing.map((c) => [c.id, c]));
@@ -124,17 +149,88 @@ export async function importBackup(backup: Backup, mode: ImportMode): Promise<Im
     const transactions: Transaction[] = backup.transactions.map((t) => ({
       ...t,
       categoryId: remap.get(t.categoryId) ?? t.categoryId,
+      walletId: walletMerge.remap.get(t.walletId) ?? t.walletId,
     }));
 
+    await assertWithinCaps(
+      walletMerge.total,
+      transactions.map((t) => t.id),
+    );
     const alreadyHere = await db.transactions.bulkGet(transactions.map((t) => t.id));
     await db.categories.bulkPut(toPut);
+    await db.wallets.bulkPut(walletMerge.toPut);
     await db.transactions.bulkPut(transactions);
+    // A merge must never leave every wallet archived (the backup may archive the
+    // wallets this phone uses): bring back the first one.
+    const wallets = await db.wallets.toArray();
+    if (!wallets.some((w) => !w.archived)) {
+      const first = wallets.sort((a, b) => a.sortOrder - b.sortOrder)[0];
+      if (first) await db.wallets.update(first.id, { archived: false });
+    }
     return {
       transactions: transactions.length,
       transactionsAdded: alreadyHere.filter((t) => t === undefined).length,
       categoriesAdded: toPut.filter((c) => !existingById.has(c.id)).length,
+      walletsAdded: walletMerge.added,
     };
   });
+}
+
+/**
+ * Works out how the backup's wallets fold into this device's: same id → the backup's
+ * version wins (unless that would duplicate a name); a new id whose name already
+ * exists → its entries move into the existing wallet. New wallets go to the end.
+ */
+async function mergeWallets(incoming: readonly Wallet[]) {
+  const existing = await db.wallets.toArray();
+  const existingById = new Map(existing.map((w) => [w.id, w]));
+  const byName = new Map(existing.map((w) => [w.name.toLowerCase(), w.id]));
+  let nextOrder = Math.max(-1, ...existing.map((w) => w.sortOrder)) + 1;
+
+  const remap = new Map<string, string>();
+  const toPut: Wallet[] = [];
+  let added = 0;
+  for (const wallet of incoming) {
+    const key = wallet.name.toLowerCase();
+    const owner = byName.get(key);
+    const local = existingById.get(wallet.id);
+
+    if (!local) {
+      if (owner !== undefined) {
+        remap.set(wallet.id, owner);
+      } else {
+        toPut.push({ ...wallet, sortOrder: nextOrder++ });
+        byName.set(key, wallet.id);
+        added += 1;
+      }
+      continue;
+    }
+
+    // Keep this phone's order: the backup's sortOrder could collide with local wallets.
+    if (owner !== undefined && owner !== wallet.id) {
+      toPut.push({ ...wallet, name: local.name, sortOrder: local.sortOrder }); // keep names unique
+    } else {
+      byName.delete(local.name.toLowerCase());
+      byName.set(key, wallet.id);
+      toPut.push({ ...wallet, sortOrder: local.sortOrder });
+    }
+  }
+  return { remap, toPut, added, total: existing.length + added };
+}
+
+/**
+ * The per-file caps in backupFormat also apply to the merged result, so repeated
+ * merges can't grow the data past what the list screens are built for.
+ */
+async function assertWithinCaps(walletTotal: number, incomingTxIds: readonly string[]) {
+  const alreadyHere = await db.transactions.bulkGet([...incomingTxIds]);
+  const newTx = alreadyHere.filter((t) => t === undefined).length;
+  const txTotal = (await db.transactions.count()) + newTx;
+  if (walletTotal > MAX_WALLETS || txTotal > MAX_TRANSACTIONS) {
+    throw new ImportConflictError(
+      'Adding this backup would go over the app’s limit for wallets or transactions. Use “Replace all my data” instead.',
+    );
+  }
 }
 
 function nameKey(c: Pick<Category, 'type' | 'name'>): string {

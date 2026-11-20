@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { db } from '../../db/db.ts';
-import { defaultCategories } from '../../db/seed.ts';
-import type { Category } from '../../db/types.ts';
+import { CASH_WALLET_ID, defaultCategories, defaultWallet } from '../../db/seed.ts';
+import type { Category, Wallet } from '../../db/types.ts';
+import { addWallet, setWalletArchived } from '../wallets/walletRepository.ts';
 import { addTransaction } from '../transactions/transactionRepository.ts';
 import { addCategory } from '../settings/categoryRepository.ts';
 import { getCurrency, setCurrency } from '../settings/settingsRepository.ts';
@@ -24,6 +25,7 @@ async function addLunch(note = 'Jollibee') {
     type: 'expense',
     amountMinor: 24550,
     categoryId: 'expense-food',
+    walletId: 'wallet-cash',
     date: '2026-11-19',
     note,
   });
@@ -37,6 +39,7 @@ describe('backup round trip', () => {
       type: 'expense',
       amountMinor: 50000,
       categoryId: petsId,
+      walletId: 'wallet-cash',
       date: '2026-11-18',
       note: '',
     });
@@ -77,6 +80,7 @@ describe('backup round trip', () => {
       type: 'expense',
       amountMinor: 1000,
       categoryId: 'expense-transport',
+      walletId: 'wallet-cash',
       date: '2026-11-01',
       note: 'Jeep',
       createdAt: 1,
@@ -121,6 +125,7 @@ describe('backup round trip', () => {
       type: 'expense',
       amountMinor: 30000,
       categoryId: otherPets.id,
+      walletId: 'wallet-cash',
       date: '2026-11-10',
       note: '',
       createdAt: 1,
@@ -146,6 +151,7 @@ describe('backup round trip', () => {
         type: 'income',
         amountMinor: 1,
         categoryId: 'expense-food',
+        walletId: 'wallet-cash',
         date: '2026-11-01',
         note: '',
         createdAt: 1,
@@ -178,6 +184,187 @@ describe('backup round trip', () => {
     await importBackup(backup, 'merge');
 
     expect(await getCurrency()).toBe('USD');
+  });
+});
+
+describe('backup wallets (v2)', () => {
+  const otherGcash: Wallet = {
+    id: 'other-phone-gcash',
+    name: 'gcash',
+    emoji: '📲',
+    color: 'purple',
+    startingBalanceMinor: 1_000,
+    archived: false,
+    sortOrder: 0,
+  };
+
+  it('Replace_RestoresWalletsAndTheirEntries', async () => {
+    const gcash = await addWallet({
+      name: 'GCash',
+      emoji: '📱',
+      color: 'blue',
+      startingBalanceMinor: -5_000,
+    });
+    await addTransaction({
+      type: 'expense',
+      amountMinor: 100,
+      categoryId: 'expense-food',
+      walletId: gcash,
+      date: '2026-11-20',
+      note: '',
+    });
+    const text = serializeBackup(await createBackup());
+
+    await db.delete();
+    await db.open();
+    const parsed = parseBackup(text);
+    if (!parsed.ok) throw new Error(parsed.error);
+    const summary = await importBackup(parsed.backup, 'replace');
+
+    expect(summary.walletsAdded).toBe(2);
+    expect((await db.wallets.get(gcash))?.startingBalanceMinor).toBe(-5_000);
+    expect(await db.transactions.where('walletId').equals(gcash).count()).toBe(1);
+  });
+
+  it('Merge_SameNameDifferentIdWallet_FoldsIntoExisting', async () => {
+    const localGcash = await addWallet({
+      name: 'GCash',
+      emoji: '📱',
+      color: 'blue',
+      startingBalanceMinor: 0,
+    });
+    const backup = await createBackup();
+    backup.wallets.push(otherGcash);
+    backup.transactions.push({
+      id: 'from-other',
+      type: 'expense',
+      amountMinor: 500,
+      categoryId: 'expense-food',
+      walletId: otherGcash.id,
+      date: '2026-11-10',
+      note: '',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    const summary = await importBackup(backup, 'merge');
+
+    expect(summary.walletsAdded).toBe(0);
+    expect(await db.wallets.get(otherGcash.id)).toBeUndefined();
+    expect((await db.transactions.get('from-other'))?.walletId).toBe(localGcash);
+  });
+
+  it('Merge_NewWallet_AddedAtTheEnd', async () => {
+    const backup = await createBackup();
+    backup.wallets.push({ ...otherGcash, name: 'Maya', sortOrder: 0 });
+
+    const summary = await importBackup(backup, 'merge');
+
+    expect(summary.walletsAdded).toBe(1);
+    expect(await db.wallets.get(otherGcash.id)).toMatchObject({ name: 'Maya', sortOrder: 1 });
+  });
+
+  it('Merge_BackupArchivesEveryWallet_KeepsOneActive', async () => {
+    // This phone only has Cash; the backup's copy of Cash is archived (same id, so
+    // the backup's version wins), which would leave no active wallet.
+    const backup = await createBackup();
+    backup.wallets = backup.wallets.map((w) => ({ ...w, archived: true }));
+
+    await importBackup(backup, 'merge');
+
+    expect((await db.wallets.get(CASH_WALLET_ID))?.archived).toBe(false);
+  });
+
+  /** A v1 file (slices 4–6) as parseBackup reads it: a made-up Cash, entries in it. */
+  async function v1Backup() {
+    const backup = await createBackup();
+    const text = JSON.parse(serializeBackup(backup)) as Record<string, unknown>;
+    text.version = 1;
+    delete text.wallets;
+    text.transactions = [
+      {
+        id: 'old-entry',
+        type: 'expense',
+        amountMinor: 700,
+        categoryId: 'expense-food',
+        date: '2026-10-01',
+        note: '',
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    ];
+    const parsed = parseBackup(JSON.stringify(text));
+    if (!parsed.ok) throw new Error(parsed.error);
+    return parsed.backup;
+  }
+
+  it('Merge_V1Backup_LeavesEditedLocalCashAlone', async () => {
+    await addWallet({ name: 'GCash', emoji: '📱', color: 'blue', startingBalanceMinor: 0 });
+    await db.wallets.update(CASH_WALLET_ID, {
+      name: 'Wallet',
+      startingBalanceMinor: 500_000,
+      archived: true,
+      sortOrder: 5,
+    });
+    const before = await db.wallets.get(CASH_WALLET_ID);
+
+    await importBackup(await v1Backup(), 'merge');
+
+    expect(await db.wallets.get(CASH_WALLET_ID)).toEqual(before);
+    expect((await db.transactions.get('old-entry'))?.walletId).toBe(CASH_WALLET_ID);
+  });
+
+  it('Merge_V1Backup_CashDeletedHere_BringsCashBack', async () => {
+    await addWallet({ name: 'GCash', emoji: '📱', color: 'blue', startingBalanceMinor: 0 });
+    await db.wallets.delete(CASH_WALLET_ID);
+
+    await importBackup(await v1Backup(), 'merge');
+
+    expect((await db.wallets.get(CASH_WALLET_ID))?.name).toBe('Cash');
+    expect((await db.transactions.get('old-entry'))?.walletId).toBe(CASH_WALLET_ID);
+  });
+
+  it('Merge_SameIdWallet_KeepsThisPhonesOrder', async () => {
+    const id = await addWallet({
+      name: 'BDO',
+      emoji: '🏦',
+      color: 'blue',
+      startingBalanceMinor: 0,
+    });
+    const backup = await createBackup();
+    const bdo = backup.wallets.find((w) => w.id === id);
+    if (!bdo) throw new Error('missing');
+    bdo.sortOrder = 0; // collides with Cash here
+
+    await importBackup(backup, 'merge');
+
+    expect((await db.wallets.get(id))?.sortOrder).toBe(1);
+  });
+
+  it('Merge_WouldExceedWalletCap_RejectsAndChangesNothing', async () => {
+    await db.wallets.bulkAdd(
+      Array.from({ length: 99 }, (_, i) => ({ ...otherGcash, id: `w${i}`, name: `W${i}` })),
+    ); // 100 with Cash
+    const backup = await createBackup();
+    backup.wallets.push({ ...otherGcash, id: 'one-more', name: 'One more' });
+
+    await expect(importBackup(backup, 'merge')).rejects.toThrow(ImportConflictError);
+    expect(await db.wallets.get('one-more')).toBeUndefined();
+  });
+
+  it('Merge_LocalWalletArchivedHere_StaysAsBackupSays', async () => {
+    const id = await addWallet({
+      name: 'BDO',
+      emoji: '🏦',
+      color: 'blue',
+      startingBalanceMinor: 0,
+    });
+    const backup = await createBackup(); // BDO active in the backup
+    await setWalletArchived(id, true);
+
+    await importBackup(backup, 'merge');
+
+    expect((await db.wallets.get(id))?.archived).toBe(false); // backup version wins
   });
 });
 
@@ -228,6 +415,7 @@ describe('CSV', () => {
     ['+63 917', "'+63 917"],
     ['-5 discount', "'-5 discount"],
     ['@home', "'@home"],
+    ['x;=HYPERLINK("http://a","b")', '"x;=HYPERLINK(""http://a"",""b"")"'],
   ])('csvTextCell_%j', (input, expected) => {
     expect(csvTextCell(input)).toBe(expected);
   });
@@ -240,6 +428,7 @@ describe('CSV', () => {
           type: 'expense',
           amountMinor: 24550,
           categoryId: 'expense-food',
+          walletId: 'wallet-cash',
           date: '2026-11-19',
           note: 'Jollibee, Makati',
           createdAt: 2,
@@ -250,6 +439,7 @@ describe('CSV', () => {
           type: 'income',
           amountMinor: 2500000,
           categoryId: 'income-salary',
+          walletId: 'wallet-cash',
           date: '2026-11-01',
           note: '',
           createdAt: 1,
@@ -257,13 +447,14 @@ describe('CSV', () => {
         },
       ],
       categories,
+      new Map([[defaultWallet.id, defaultWallet]]),
       'PHP',
     );
 
     expect(csv).toBe(
-      '﻿Date,Type,Category,Amount,Currency,Note\r\n' +
-        '2026-11-01,Income,Salary,25000.00,PHP,\r\n' +
-        '2026-11-19,Expense,Food,-245.50,PHP,"Jollibee, Makati"\r\n',
+      '﻿Date,Type,Wallet,Category,Amount,Currency,Note\r\n' +
+        '2026-11-01,Income,Cash,Salary,25000.00,PHP,\r\n' +
+        '2026-11-19,Expense,Cash,Food,-245.50,PHP,"Jollibee, Makati"\r\n',
     );
   });
 });

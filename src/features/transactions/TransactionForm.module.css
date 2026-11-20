@@ -58,7 +58,8 @@
 }
 
 .segment input,
-.categoryTile input {
+.categoryTile input,
+.walletChip input {
   position: absolute;
   opacity: 0;
   inset: 0;
@@ -83,7 +84,8 @@
 }
 
 .segment input:focus-visible + span,
-.categoryTile:has(input:focus-visible) {
+.categoryTile:has(input:focus-visible),
+.walletChip:has(input:focus-visible) {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
@@ -121,6 +123,49 @@
 
 .amount:focus {
   outline: none; /* the wrapper shows focus */
+}
+
+/* Wallet chips: one swipeable row; wraps nothing so the form stays short */
+.walletRow {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  /* let chips run to the screen edge while scrolling */
+  margin: 0 calc(var(--space-4) * -1);
+  padding: 2px var(--space-4);
+  scrollbar-width: none;
+}
+
+.walletChip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4) 0 var(--space-3);
+  border: 2px solid var(--border);
+  border-left: 6px solid var(--wallet);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 1.125rem;
+  scroll-snap-align: start;
+}
+
+.walletName {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* .selected (below) adds the accent border; the left stripe keeps the wallet color */
+.walletChip.selected {
+  border-left-color: var(--wallet);
+}
+
+.walletChip.selected .walletName {
+  font-weight: 700;
 }
 
 /* Category tiles: 4 per row on iPhone 14 */

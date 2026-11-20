@@ -30,6 +30,7 @@ function lunch(createdAt = Date.now()) {
       type: 'expense',
       amountMinor: 24550,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: '2026-11-19',
       note: 'Jollibee',
     },
@@ -89,7 +90,7 @@ describe('Save backup', () => {
     const [filename, content, type] = first(saveFileMock.mock.calls);
     expect(filename).toMatch(/\.csv$/);
     expect(type).toBe('text/csv');
-    expect(content).toContain('2026-11-19,Expense,Food,-245.50,PHP,Jollibee');
+    expect(content).toContain('2026-11-19,Expense,Cash,Food,-245.50,PHP,Jollibee');
     expect(await getLastBackupAt()).toBeNull(); // CSV can't restore, so it isn't a backup
   });
 
@@ -121,7 +122,9 @@ describe('Restore', () => {
 
     const preview = await screen.findByRole('region', { name: 'Backup to restore' });
     expect(within(preview).getByText('Backup from Nov 19, 2026')).toBeInTheDocument();
-    expect(within(preview).getByText(/1 transactions · 12 categories · PHP/)).toBeInTheDocument();
+    expect(
+      within(preview).getByText(/1 transactions · 1 wallet · 12 categories · PHP/),
+    ).toBeInTheDocument();
 
     await user.click(within(preview).getByRole('button', { name: 'Add to my data' }));
 
@@ -135,6 +138,7 @@ describe('Restore', () => {
       type: 'expense',
       amountMinor: 1,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: '2026-11-01',
       note: 'local only',
     });
@@ -162,6 +166,7 @@ describe('Restore', () => {
       type: 'expense',
       amountMinor: 1,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: '2026-11-01',
       note: 'local only',
     });
@@ -251,7 +256,7 @@ describe('Backup reminder on Home', () => {
     await recordBackup(Date.now() - 2 * DAY);
     renderAt('/');
 
-    await screen.findByRole('region', { name: 'Balance' });
+    await screen.findByRole('region', { name: 'Total balance' });
     expect(
       screen.queryByRole('complementary', { name: 'Backup reminder' }),
     ).not.toBeInTheDocument();
@@ -261,7 +266,7 @@ describe('Backup reminder on Home', () => {
     await lunch();
     renderAt('/');
 
-    await screen.findByRole('region', { name: 'Balance' });
+    await screen.findByRole('region', { name: 'Total balance' });
     expect(
       screen.queryByRole('complementary', { name: 'Backup reminder' }),
     ).not.toBeInTheDocument();

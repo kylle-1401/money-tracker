@@ -84,12 +84,34 @@
 
 - 2026-11-20: Merged the slices into `main`. Before republishing, the history was rewritten so the AI assistant instruction files (kept locally, now in `.gitignore`) were never committed.
 
+- 2026-11-20: Republished; live at the GitHub Pages URL. Pages deploy verified (the "Ready to work offline" message appeared on the real site).
+- 2026-11-20: Plan approved for wallets, transfers and budget alerts: `docs/plans/2026-11-20-wallets-and-transfers.md` (slices 7–9; desktop layout moves after).
+- 2026-11-20: **Slice 7 (wallets)** on branch `feature/7-wallets`, not committed yet:
+  - Dexie **schema v2**: `wallets` table; every transaction gets `walletId`. The upgrade creates "Cash 💵" and moves every existing entry into it (one IndexedDB transaction). New installs get Cash from the populate step
+  - Settings → **Wallets**: list with balances, add/edit (name, emoji, card color, starting balance with a "money I owe" switch for negative balances), move earlier/later, archive/restore, delete only when unused. At least one wallet always stays active
+  - Entry form: **Paid from / Received in** wallet chips; remembers the last wallet used (`settings.lastWalletId`); editing an entry whose wallet was archived still shows it
+  - Home: **Total balance** (starting balances + all-time income − expenses, archived wallets included) and swipeable **wallet cards** with an "Add wallet" card; rows show "💵 Cash · note" once there are 2+ wallets
+  - **Backup format v2** (includes wallets). v1 files still restore: entries go into Cash. Merge folds wallets by name like categories and never leaves every wallet archived. CSV gains a **Wallet** column
+  - Wallet colors are a fixed set of tokens (light and dark), applied with a `data-color` attribute, not inline styles (keeps the CSP strict)
+  - Security review (security-reviewer agent): passed with notes. Fixed:
+    - Medium: merging an old **v1** backup overwrote this phone's Cash wallet (name, starting balance, archived) with the made-up default → the v1 stand-in is skipped when Cash exists here (and still added if Cash was deleted)
+    - Same-id wallets keep this phone's sort order on merge
+    - Control/bidi characters are now stripped when the app saves wallet and category names, emoji and notes, with the same rule as import (`lib/text.ts`, now also LRM/RLM/ALM). Before, a name like "GCash" + U+202E could make the app's own backup fail to restore
+    - Wallet emoji length is checked in the repository, not only the form
+    - Saving an entry checks the wallet and writes in one DB transaction
+    - CSV cells with `;` are quoted (formula split in `;`-separator locales)
+    - Merges are capped on the merged total (100 wallets / 50,000 transactions), not just per file
+    - Noted, not changed: an old tab still running v1 code can't write after the upgrade, because Dexie closes the old connection when the database version changes
+  - 262 tests pass (+51); lint, typecheck, format and build are clean
+  - Browser pane (production build, 390×844): created a real v1-format IndexedDB with 3 entries, then opened the new build → upgraded to v2, all 3 entries in Cash, balance ₱24,704.50 as calculated; added GCash (₱5,120 starting) through the UI, spent ₱300 from it → GCash ₱4,820, total ₱29,524.50 (matches hand calculation); rows show the wallet; Settings and Home OK in dark mode; no horizontal scroll. Only console error: the known service-worker limitation of the pane
+
 ## In progress
-- Waiting for the owner: publish the repo from GitHub Desktop and set Pages → Source: GitHub Actions.
+- Slice 7 waiting for review and the go-ahead to commit.
 
 ## Next
-- After the first deploy: install on the iPhone from the Pages URL, then test Airplane Mode, the install tip, the share sheet and the date picker.
-- Slice 7: desktop layout.
+- After slice 7 deploys: owners should **Save backup before tapping Reload** on that update (the storage upgrade runs once and can't be undone).
+- Slice 8: transfers. Slice 9: budget alerts. Then desktop layout.
+- iPhone test of the live app: Airplane Mode, install tip, share sheet, date picker.
 - Follow-ups: paging for long transaction lists; recheck the `npm audit` advisories.
 
 ## Decisions / notes

@@ -4,6 +4,8 @@ import { parseAmountToMinor } from '../../lib/money.ts';
 import type { TransactionInput } from './transactionRepository.ts';
 import { transactionFormSchema, type TransactionFormValues } from './transactionSchema.ts';
 import { usePickableCategories } from './hooks.ts';
+import { useWallets } from '../wallets/hooks.ts';
+import tone from '../wallets/walletTone.module.css';
 import { useCurrency } from '../settings/currencyContext.ts';
 import { currencySymbol } from '../settings/currencies.ts';
 import styles from './TransactionForm.module.css';
@@ -38,7 +40,12 @@ export default function TransactionForm({
   // useWatch (not watch) so the React Compiler can still optimize this component.
   const type = useWatch({ control, name: 'type' });
   const selectedCategoryId = useWatch({ control, name: 'categoryId' });
+  const selectedWalletId = useWatch({ control, name: 'walletId' });
   const categories = usePickableCategories(type);
+  const allWallets = useWallets();
+  // Active wallets, plus the entry's own wallet if it was archived later (editing an
+  // old entry must still show where it was).
+  const wallets = allWallets?.filter((w) => !w.archived || w.id === defaultValues.walletId);
   const symbol = currencySymbol(useCurrency());
 
   const submit = handleSubmit(async (values) => {
@@ -50,6 +57,7 @@ export default function TransactionForm({
         type: values.type,
         amountMinor,
         categoryId: values.categoryId,
+        walletId: values.walletId,
         date: values.date,
         note: values.note,
       });
@@ -106,6 +114,37 @@ export default function TransactionForm({
           </p>
         )}
       </div>
+
+      <fieldset
+        className={styles.field}
+        aria-describedby={errors.walletId ? 'wallet-error' : undefined}
+      >
+        <legend className={styles.label}>{type === 'income' ? 'Received in' : 'Paid from'}</legend>
+        {wallets === undefined ? (
+          <p className={styles.muted} role="status">
+            Loading wallets…
+          </p>
+        ) : (
+          <div className={styles.walletRow}>
+            {wallets.map((w) => (
+              <label
+                key={w.id}
+                className={`${styles.walletChip} ${tone.tone} ${selectedWalletId === w.id ? styles.selected : ''}`}
+                data-color={w.color}
+              >
+                <input type="radio" value={w.id} {...register('walletId')} />
+                <span aria-hidden="true">{w.emoji}</span>
+                <span className={styles.walletName}>{w.name}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        {errors.walletId && (
+          <p id="wallet-error" className={styles.error} role="alert">
+            {errors.walletId.message}
+          </p>
+        )}
+      </fieldset>
 
       <fieldset
         className={styles.field}

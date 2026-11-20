@@ -3,7 +3,17 @@ import type { Transaction } from '../../db/types.ts';
 import { groupByDay } from './groupByDay.ts';
 
 function tx(id: string, date: string, type: Transaction['type'], amountMinor: number): Transaction {
-  return { id, date, type, amountMinor, categoryId: 'c', note: '', createdAt: 0, updatedAt: 0 };
+  return {
+    id,
+    date,
+    type,
+    amountMinor,
+    categoryId: 'c',
+    walletId: 'w',
+    note: '',
+    createdAt: 0,
+    updatedAt: 0,
+  };
 }
 
 describe('groupByDay', () => {

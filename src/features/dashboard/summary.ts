@@ -1,4 +1,4 @@
-import type { Category, Transaction } from '../../db/types.ts';
+import type { Category, Transaction, Wallet } from '../../db/types.ts';
 import { monthKeyOf, type MonthKey } from '../../lib/dates.ts';
 
 /** Money in and out for one month, in minor units. */
@@ -26,6 +26,38 @@ export function balanceMinor(transactions: readonly Transaction[]): number {
     (sum, t) => sum + (t.type === 'income' ? t.amountMinor : -t.amountMinor),
     0,
   );
+}
+
+/**
+ * Business rule (slice 7): wallet balance = starting balance + income − expenses
+ * in that wallet, all time. Archived wallets are included. Transfers (slice 8) will
+ * extend this.
+ * @returns balance per wallet id
+ */
+export function walletBalances(
+  wallets: readonly Wallet[],
+  transactions: readonly Transaction[],
+): Map<string, number> {
+  const balances = new Map(wallets.map((w) => [w.id, w.startingBalanceMinor]));
+  for (const t of transactions) {
+    const current = balances.get(t.walletId);
+    if (current === undefined) continue; // only possible with corrupt data
+    balances.set(t.walletId, current + (t.type === 'income' ? t.amountMinor : -t.amountMinor));
+  }
+  return balances;
+}
+
+/**
+ * Business rule: total balance = the sum of every wallet's balance (archived ones
+ * too: the money still exists) = starting balances + all-time income − expenses.
+ */
+export function totalBalanceMinor(
+  wallets: readonly Wallet[],
+  transactions: readonly Transaction[],
+): number {
+  let total = 0;
+  for (const balance of walletBalances(wallets, transactions).values()) total += balance;
+  return total;
 }
 
 /** Income and expense totals for transactions dated in `month`. */

@@ -23,6 +23,7 @@ describe('Currency', () => {
       type: 'expense',
       amountMinor: 24550,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });
@@ -107,6 +108,7 @@ describe('Categories', () => {
       type: 'expense',
       amountMinor: 100,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });
@@ -129,6 +131,7 @@ describe('Categories', () => {
       type: 'expense',
       amountMinor: 100,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });
@@ -154,6 +157,7 @@ describe('Categories', () => {
       type: 'expense',
       amountMinor: 100,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });

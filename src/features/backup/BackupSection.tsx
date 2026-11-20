@@ -66,13 +66,15 @@ export default function BackupSection() {
 
   const exportCsv = () =>
     run(async () => {
-      const [transactions, categories] = await Promise.all([
+      const [transactions, categories, wallets] = await Promise.all([
         db.transactions.toArray(),
         db.categories.toArray(),
+        db.wallets.toArray(),
       ]);
       const csv = transactionsToCsv(
         transactions,
         new Map(categories.map((c) => [c.id, c])),
+        new Map(wallets.map((w) => [w.id, w])),
         currency,
       );
       const outcome = await saveFile(
@@ -175,8 +177,9 @@ export default function BackupSection() {
         <div className={styles.preview} role="region" aria-label="Backup to restore">
           <p className={styles.previewTitle}>Backup from {formatExportedAt(preview.exportedAt)}</p>
           <p className={styles.hint}>
-            {preview.transactions.length} transactions · {preview.categories.length} categories ·{' '}
-            {preview.currency}
+            {preview.transactions.length} transactions · {preview.wallets.length}{' '}
+            {preview.wallets.length === 1 ? 'wallet' : 'wallets'} · {preview.categories.length}{' '}
+            categories · {preview.currency}
           </p>
           <button
             type="button"

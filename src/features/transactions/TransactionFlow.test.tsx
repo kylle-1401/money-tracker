@@ -25,7 +25,7 @@ describe('Add transaction', () => {
     await user.click(screen.getByRole('link', { name: 'Add transaction' }));
     expect(screen.getByRole('heading', { name: 'New transaction' })).toBeInTheDocument();
 
-    await user.type(screen.getByLabelText('Amount'), '245.50');
+    await user.type(await screen.findByLabelText('Amount'), '245.50');
     await user.click(await screen.findByRole('radio', { name: /Food/ }));
     await user.type(screen.getByLabelText(/Note/), 'Jollibee');
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -42,6 +42,7 @@ describe('Add transaction', () => {
       type: 'expense',
       amountMinor: 24550,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
     });
   });
 
@@ -50,7 +51,7 @@ describe('Add transaction', () => {
     renderAt('/transactions');
 
     await user.click(screen.getByRole('link', { name: 'Add transaction' }));
-    await user.click(screen.getByRole('radio', { name: '+ Income' }));
+    await user.click(await screen.findByRole('radio', { name: '+ Income' }));
     expect(await screen.findByRole('radio', { name: /Salary/ })).toBeInTheDocument();
     expect(screen.queryByRole('radio', { name: /Food/ })).not.toBeInTheDocument();
 
@@ -83,7 +84,7 @@ describe('Add transaction', () => {
     const user = userEvent.setup();
     renderAt('/transactions/new');
 
-    await user.type(screen.getByLabelText('Amount'), '1.234');
+    await user.type(await screen.findByLabelText('Amount'), '1.234');
     await user.click(await screen.findByRole('radio', { name: /Food/ }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
@@ -97,7 +98,7 @@ describe('Add transaction', () => {
     const user = userEvent.setup();
     renderAt('/transactions/new');
 
-    await user.type(screen.getByLabelText('Amount'), '100');
+    await user.type(await screen.findByLabelText('Amount'), '100');
     await user.click(await screen.findByRole('radio', { name: /Food/ }));
     await user.click(screen.getByRole('radio', { name: '+ Income' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -108,7 +109,7 @@ describe('Add transaction', () => {
   it('AddFlow_DefaultsToExpenseAndToday', async () => {
     renderAt('/transactions/new');
 
-    expect(screen.getByRole('radio', { name: '− Expense' })).toBeChecked();
+    expect(await screen.findByRole('radio', { name: '− Expense' })).toBeChecked();
     expect(screen.getByLabelText('Date')).toHaveValue(today);
   });
 
@@ -117,7 +118,7 @@ describe('Add transaction', () => {
     renderAt('/transactions');
 
     await user.click(screen.getByRole('link', { name: 'Add transaction' }));
-    await user.type(screen.getByLabelText('Amount'), '99');
+    await user.type(await screen.findByLabelText('Amount'), '99');
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     expect(
@@ -133,6 +134,7 @@ describe('Edit and delete transaction', () => {
       type: 'expense',
       amountMinor: 5000,
       categoryId: 'expense-transport',
+      walletId: 'wallet-cash',
       date: today,
       note: 'Jeep',
     });
@@ -156,6 +158,7 @@ describe('Edit and delete transaction', () => {
       type: 'expense',
       amountMinor: 5000,
       categoryId: 'expense-transport',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });
@@ -177,6 +180,7 @@ describe('Edit and delete transaction', () => {
       type: 'expense',
       amountMinor: 5000,
       categoryId: 'expense-transport',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });
@@ -210,6 +214,7 @@ describe('Transactions list', () => {
       type: 'expense',
       amountMinor: 100,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: '2025-01-02',
       note: '',
     });
@@ -217,6 +222,7 @@ describe('Transactions list', () => {
       type: 'expense',
       amountMinor: 100,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: today,
       note: '',
     });

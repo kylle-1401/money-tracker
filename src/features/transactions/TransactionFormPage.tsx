@@ -1,4 +1,6 @@
 import { useParams } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { getDefaultWalletId, rememberLastWallet } from '../wallets/walletRepository.ts';
 import { toLocalDateString } from '../../lib/dates.ts';
 import { minorToInput } from '../../lib/money.ts';
 import { useGoBack } from '../../lib/useGoBack.ts';
@@ -23,12 +25,15 @@ export default function TransactionFormPage() {
   const isEdit = id !== undefined;
   const existing = useTransaction(id);
   const goBack = useGoBack('/transactions');
+  // New entries start in the last wallet used (read once; editing ignores it).
+  const defaultWalletId = useLiveQuery(getDefaultWalletId, []);
 
   async function handleSave(input: TransactionInput) {
     if (isEdit) {
       await updateTransaction(id, input);
     } else {
       await addTransaction(input);
+      await rememberLastWallet(input.walletId);
     }
     goBack();
   }
@@ -42,7 +47,7 @@ export default function TransactionFormPage() {
   }
 
   let body;
-  if (isEdit && existing === undefined) {
+  if ((isEdit && existing === undefined) || (!isEdit && defaultWalletId === undefined)) {
     body = (
       <p className={forms.muted} role="status">
         Loading…
@@ -63,6 +68,7 @@ export default function TransactionFormPage() {
                   type: existing.type,
                   amount: minorToInput(existing.amountMinor),
                   categoryId: existing.categoryId,
+                  walletId: existing.walletId,
                   date: existing.date,
                   note: existing.note,
                 }
@@ -70,6 +76,7 @@ export default function TransactionFormPage() {
                   type: 'expense', // most entries are expenses
                   amount: '',
                   categoryId: '',
+                  walletId: defaultWalletId ?? '',
                   date: toLocalDateString(new Date()),
                   note: '',
                 }

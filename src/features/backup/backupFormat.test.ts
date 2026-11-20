@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultCategories } from '../../db/seed.ts';
+import { CASH_WALLET_ID, defaultCategories, defaultWallet } from '../../db/seed.ts';
 import { first } from '../../test/helpers.ts';
 import { BACKUP_VERSION, parseBackup, serializeBackup, type Backup } from './backupFormat.ts';
 
@@ -14,12 +14,14 @@ function validBackup(): Backup {
     exportedAt: '2026-11-19T08:00:00.000Z',
     currency: 'PHP',
     categories: defaultCategories.map((c) => ({ ...c })),
+    wallets: [{ ...defaultWallet }],
     transactions: [
       {
         id: 't1',
         type: 'expense',
         amountMinor: 24550,
         categoryId: 'expense-food',
+        walletId: CASH_WALLET_ID,
         date: '2026-11-19',
         note: 'Jollibee',
         createdAt: 1,
@@ -79,6 +81,22 @@ describe('parseBackup', () => {
         (b.transactions as unknown[]).push((b.transactions as unknown[])[0]),
     ],
     ['transactions not a list', (b: Record<string, unknown>) => (b.transactions = 'lots')],
+    ['missing wallet', (b: Record<string, unknown>) => (firstTx(b).walletId = 'nope')],
+    ['no wallets', (b: Record<string, unknown>) => (b.wallets = [])],
+    [
+      'duplicate wallet name',
+      (b: Record<string, unknown>) =>
+        (b.wallets as unknown[]).push({ ...defaultWallet, id: 'cash-2', name: ' CASH' }),
+    ],
+    [
+      'every wallet archived',
+      (b: Record<string, unknown>) => (b.wallets = [{ ...defaultWallet, archived: true }]),
+    ],
+    [
+      'starting balance too large',
+      (b: Record<string, unknown>) =>
+        (b.wallets = [{ ...defaultWallet, startingBalanceMinor: 1e15 }]),
+    ],
   ])('parseBackup_Damaged_%s_RejectsSafely', (_label, edit) => {
     const result = parseEdited(edit);
     expect(result).toEqual({ ok: false, error: expect.stringContaining('damaged or was edited') });
@@ -120,6 +138,35 @@ describe('parseBackup', () => {
   it('parseBackup_UnknownCurrency_FallsBackToDefault', () => {
     const result = parseEdited((b) => (b.currency = 'XYZ'));
     expect(result.ok && result.backup.currency).toBe('PHP');
+  });
+
+  it('parseBackup_Version1File_PutsEveryEntryInCash', () => {
+    // Exactly what slices 4–6 wrote: no wallets, no walletId.
+    const v1 = JSON.parse(serializeBackup(validBackup())) as Record<string, unknown>;
+    v1.version = 1;
+    delete v1.wallets;
+    delete firstTx(v1).walletId;
+
+    const result = parseBackup(JSON.stringify(v1));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.backup.wallets).toEqual([defaultWallet]);
+    expect(first(result.backup.transactions).walletId).toBe(CASH_WALLET_ID);
+  });
+
+  it('parseBackup_UnknownWalletColor_FallsBackToGray', () => {
+    const result = parseEdited(
+      (b) => (first(b.wallets as Array<Record<string, unknown>>).color = 'red'),
+    );
+    expect(result.ok && first(result.backup.wallets).color).toBe('gray');
+  });
+
+  it('parseBackup_NegativeStartingBalance_Kept', () => {
+    const result = parseEdited(
+      (b) => (first(b.wallets as Array<Record<string, unknown>>).startingBalanceMinor = -300_000),
+    );
+    expect(result.ok && first(result.backup.wallets).startingBalanceMinor).toBe(-300_000);
   });
 
   it('parseBackup_ScriptInNote_IsKeptAsPlainText', () => {

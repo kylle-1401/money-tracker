@@ -13,6 +13,7 @@ const lunch: TransactionInput = {
   type: 'expense',
   amountMinor: 24500,
   categoryId: 'expense-food',
+  walletId: 'wallet-cash',
   date: '2026-11-19',
   note: ' Jollibee ',
 };

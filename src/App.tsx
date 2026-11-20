@@ -6,6 +6,7 @@ import TransactionsPage from './features/transactions/TransactionsPage.tsx';
 import TransactionFormPage from './features/transactions/TransactionFormPage.tsx';
 import SettingsPage from './features/settings/SettingsPage.tsx';
 import CategoryFormPage from './features/settings/CategoryFormPage.tsx';
+import WalletFormPage from './features/wallets/WalletFormPage.tsx';
 import CurrencyProvider from './features/settings/CurrencyProvider.tsx';
 import UpdatePrompt from './features/pwa/UpdatePrompt.tsx';
 
@@ -28,6 +29,8 @@ export default function App() {
           <Route path="transactions/:id" element={<TransactionFormPage />} />
           <Route path="settings/categories/new" element={<CategoryFormPage />} />
           <Route path="settings/categories/:id" element={<CategoryFormPage />} />
+          <Route path="settings/wallets/new" element={<WalletFormPage />} />
+          <Route path="settings/wallets/:id" element={<WalletFormPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <UpdatePrompt />

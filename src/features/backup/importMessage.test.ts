@@ -12,9 +12,14 @@ describe('importMessage', () => {
   ] as const)(
     'importMessage_%s_%i_total_%i_new',
     (mode, transactions, transactionsAdded, expected) => {
-      expect(importMessage(mode, { transactions, transactionsAdded, categoriesAdded: 0 })).toBe(
-        expected,
-      );
+      expect(
+        importMessage(mode, {
+          transactions,
+          transactionsAdded,
+          categoriesAdded: 0,
+          walletsAdded: 0,
+        }),
+      ).toBe(expected);
     },
   );
 });

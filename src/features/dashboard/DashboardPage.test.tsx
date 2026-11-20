@@ -23,6 +23,7 @@ function add(overrides: Partial<TransactionInput>) {
     type: 'expense',
     amountMinor: 100,
     categoryId: 'expense-food',
+    walletId: 'wallet-cash',
     date: `${thisMonth}-01`,
     note: '',
     ...overrides,
@@ -54,7 +55,7 @@ describe('Dashboard', () => {
     renderAt('/');
 
     // 25,000 - 500 + 10,000 - 3,000 - 1,000 = 30,500
-    const balance = await screen.findByRole('region', { name: 'Balance' });
+    const balance = await screen.findByRole('region', { name: 'Total balance' });
     expect(within(balance).getByText('₱30,500.00')).toBeInTheDocument();
   });
 
@@ -99,7 +100,7 @@ describe('Dashboard', () => {
     expect(within(where).getByText(/Transport/)).toBeInTheDocument();
     // Balance stays all-time
     expect(
-      within(screen.getByRole('region', { name: 'Balance' })).getByText('₱30,500.00'),
+      within(screen.getByRole('region', { name: 'Total balance' })).getByText('₱30,500.00'),
     ).toBeInTheDocument();
   });
 
@@ -132,7 +133,7 @@ describe('Dashboard', () => {
 
     expect(await screen.findByText(/Overspent/)).toBeInTheDocument();
     expect(
-      within(screen.getByRole('region', { name: 'Balance' })).getByText('−₱50.00'),
+      within(screen.getByRole('region', { name: 'Total balance' })).getByText('−₱50.00'),
     ).toBeInTheDocument();
   });
 

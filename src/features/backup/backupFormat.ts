@@ -1,7 +1,9 @@
 import { z } from 'zod';
-import type { Category, Transaction } from '../../db/types.ts';
+import { CASH_WALLET_ID, defaultWallet } from '../../db/seed.ts';
+import { WALLET_COLORS, type Category, type Transaction, type Wallet } from '../../db/types.ts';
 import { isValidDateString } from '../../lib/dates.ts';
 import { MAX_AMOUNT_MINOR } from '../../lib/money.ts';
+import { normalizeName, stripUnsafeChars } from '../../lib/text.ts';
 import { DEFAULT_CURRENCY, isSupportedCurrency } from '../settings/currencies.ts';
 
 /*
@@ -14,8 +16,13 @@ import { DEFAULT_CURRENCY, isSupportedCurrency } from '../settings/currencies.ts
  * category of the same type inside the same file.
  */
 
-/** Bump when the format changes; parseBackup must keep reading older versions. */
-export const BACKUP_VERSION = 1;
+/**
+ * Bump when the format changes; parseBackup must keep reading older versions.
+ * - v1 (slices 4–6): categories + transactions
+ * - v2 (slice 7): adds wallets; every transaction has a walletId. v1 files are
+ *   upgraded on read: their entries go into "Cash", like the database upgrade.
+ */
+export const BACKUP_VERSION = 2;
 export const BACKUP_APP_ID = 'money-tracker';
 
 /**
@@ -24,20 +31,13 @@ export const BACKUP_APP_ID = 'money-tracker';
  * enough rows to freeze the list screens.
  */
 export const MAX_BACKUP_BYTES = 5 * 1024 * 1024;
-const MAX_TRANSACTIONS = 50_000;
+export const MAX_TRANSACTIONS = 50_000;
 const MAX_CATEGORIES = 500;
+export const MAX_WALLETS = 100;
 
-/**
- * Control characters and bidi overrides (e.g. U+202E) can visually spoof names and
- * amounts. They are stripped (not rejected) so a backup made by the app itself always
- * restores. ZWJ (U+200D) is kept: emoji sequences need it.
- */
-// eslint-disable-next-line no-control-regex -- matching control characters is the point
-const UNSAFE_CHARS = /[\u0000-\u001F\u007F‪-‮⁦-⁩]/g;
-const clean = (s: string) => s.replace(UNSAFE_CHARS, '');
-
-/** Same normalization the app applies when saving a category name. */
-const normalizeName = (s: string) => clean(s).trim().replace(/\s+/g, ' ');
+// Same cleaning the app applies when saving (see lib/text.ts): stripped, not rejected,
+// so a backup made by the app itself always restores.
+const clean = stripUnsafeChars;
 const nameKey = (c: { type: string; name: string }) => `${c.type}|${c.name.toLowerCase()}`;
 
 export interface Backup {
@@ -46,6 +46,7 @@ export interface Backup {
   exportedAt: string;
   currency: string;
   categories: Category[];
+  wallets: Wallet[];
   transactions: Transaction[];
 }
 
@@ -67,11 +68,25 @@ const categorySchema = z.object({
   sortOrder: z.number().int().min(0).max(100_000),
 });
 
+const walletSchema = z.object({
+  id: idSchema,
+  name: z.string().transform(normalizeName).pipe(z.string().min(1).max(30)),
+  emoji: z
+    .string()
+    .transform((s) => clean(s).trim())
+    .pipe(z.string().min(1).max(16)),
+  color: z.enum(WALLET_COLORS).catch('gray'),
+  startingBalanceMinor: z.number().int().min(-MAX_AMOUNT_MINOR).max(MAX_AMOUNT_MINOR),
+  archived: z.boolean(),
+  sortOrder: z.number().int().min(0).max(100_000),
+});
+
 const transactionSchema = z.object({
   id: idSchema,
   type: typeSchema,
   amountMinor: z.number().int().min(1).max(MAX_AMOUNT_MINOR),
   categoryId: idSchema,
+  walletId: idSchema,
   date: z.string().refine(isValidDateString, 'Invalid date'),
   note: z.string().transform(clean).pipe(z.string().max(200)),
   createdAt: z.number().int().nonnegative(),
@@ -85,9 +100,24 @@ const backupSchema = z
     exportedAt: z.string().max(40),
     currency: z.string().refine(isSupportedCurrency).catch(DEFAULT_CURRENCY),
     categories: z.array(categorySchema).max(MAX_CATEGORIES),
+    wallets: z.array(walletSchema).min(1).max(MAX_WALLETS),
     transactions: z.array(transactionSchema).max(MAX_TRANSACTIONS),
   })
   .superRefine((backup, ctx) => {
+    const walletIds = new Set(backup.wallets.map((w) => w.id));
+    if (walletIds.size !== backup.wallets.length) {
+      ctx.addIssue({ code: 'custom', message: 'Duplicate wallet ids' });
+    }
+    // Business rule: wallet names are unique (case-insensitive).
+    if (new Set(backup.wallets.map((w) => w.name.toLowerCase())).size !== backup.wallets.length) {
+      ctx.addIssue({ code: 'custom', message: 'Duplicate wallet names' });
+    }
+    if (!backup.wallets.some((w) => !w.archived)) {
+      ctx.addIssue({ code: 'custom', message: 'No active wallet' });
+    }
+    if (backup.transactions.some((t) => !walletIds.has(t.walletId))) {
+      ctx.addIssue({ code: 'custom', message: 'A transaction uses a missing wallet' });
+    }
     const categoryTypes = new Map(backup.categories.map((c) => [c.id, c.type]));
     if (categoryTypes.size !== backup.categories.length) {
       ctx.addIssue({ code: 'custom', message: 'Duplicate category ids' });
@@ -140,7 +170,7 @@ export function parseBackup(text: string): ParseResult {
     };
   }
 
-  const result = backupSchema.safeParse(raw);
+  const result = backupSchema.safeParse(upgradeV1(raw as Record<string, unknown>));
   if (!result.success) {
     return {
       ok: false,
@@ -148,6 +178,21 @@ export function parseBackup(text: string): ParseResult {
     };
   }
   return { ok: true, backup: { ...result.data, app: BACKUP_APP_ID } };
+}
+
+/**
+ * Brings a v1 file up to the v2 shape before validation: adds the default Cash
+ * wallet and puts every entry in it (same rule as the database upgrade). Other
+ * versions pass through untouched; the schema still validates everything.
+ */
+function upgradeV1(raw: Record<string, unknown>): unknown {
+  if (raw.version !== 1) return raw;
+  const transactions = Array.isArray(raw.transactions)
+    ? raw.transactions.map((t: unknown) =>
+        typeof t === 'object' && t !== null ? { ...t, walletId: CASH_WALLET_ID } : t,
+      )
+    : raw.transactions;
+  return { ...raw, wallets: [defaultWallet], transactions };
 }
 
 /** Builds the JSON text for a backup file. */

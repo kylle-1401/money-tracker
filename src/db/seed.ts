@@ -1,4 +1,21 @@
-import type { Category, TxType } from './types.ts';
+import type { Category, TxType, Wallet } from './types.ts';
+
+/**
+ * The wallet every install starts with. Existing entries are moved into it by the
+ * v2 upgrade (business rule confirmed by the owner, 2026-11-20). Stable id so backups
+ * from different devices fold together.
+ */
+export const CASH_WALLET_ID = 'wallet-cash';
+
+export const defaultWallet: Wallet = {
+  id: CASH_WALLET_ID,
+  name: 'Cash',
+  emoji: '💵',
+  color: 'green',
+  startingBalanceMinor: 0,
+  archived: false,
+  sortOrder: 0,
+};
 
 type SeedRow = [name: string, emoji: string, color: string];
 

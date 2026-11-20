@@ -17,6 +17,7 @@ function tx(
     type,
     amountMinor,
     categoryId,
+    walletId: 'wallet-cash',
     note: '',
     createdAt: 0,
     updatedAt: 0,

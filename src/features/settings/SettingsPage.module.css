@@ -100,6 +100,17 @@ div.group {
   font-weight: 600;
 }
 
+.amount {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* Money owed: minus sign carries the meaning, red is extra */
+.negative {
+  color: var(--expense);
+}
+
 .chevron {
   color: var(--text-muted);
   font-size: 1.25rem;

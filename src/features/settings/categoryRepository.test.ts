@@ -91,6 +91,7 @@ describe('categoryRepository', () => {
       type: 'expense',
       amountMinor: 100,
       categoryId: 'expense-food',
+      walletId: 'wallet-cash',
       date: '2026-11-19',
       note: '',
     });

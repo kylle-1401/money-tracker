@@ -6,6 +6,7 @@ import { formatMinor } from '../../lib/money.ts';
 import { useCurrency } from '../settings/currencyContext.ts';
 import { useCategoryMap, useTransactions } from './hooks.ts';
 import { groupByDay } from './groupByDay.ts';
+import { toWalletMap, useWallets } from '../wallets/hooks.ts';
 import styles from './TransactionsPage.module.css';
 
 /** List tab: every transaction, newest first, grouped by day. Tap one to edit it. */
@@ -13,6 +14,9 @@ export default function TransactionsPage() {
   const transactions = useTransactions();
   const categories = useCategoryMap();
   const currency = useCurrency();
+  const wallets = useWallets();
+  // Wallet names on rows only help once there's more than one wallet.
+  const walletMap = wallets && wallets.length > 1 ? toWalletMap(wallets) : null;
 
   let body;
   if (transactions === undefined || categories === undefined) {
@@ -44,7 +48,11 @@ export default function TransactionsPage() {
           <ul className={styles.list}>
             {group.items.map((tx) => (
               <li key={tx.id}>
-                <TransactionRow transaction={tx} category={categories.get(tx.categoryId)} />
+                <TransactionRow
+                  transaction={tx}
+                  category={categories.get(tx.categoryId)}
+                  wallet={walletMap?.get(tx.walletId)}
+                />
               </li>
             ))}
           </ul>

@@ -1,5 +1,6 @@
 import { db } from '../../db/db.ts';
 import type { Category, TxType } from '../../db/types.ts';
+import { normalizeName, stripUnsafeChars } from '../../lib/text.ts';
 
 /** What the user can set on a category. Type is fixed once created (see addCategory). */
 export interface CategoryInput {
@@ -12,8 +13,9 @@ const DEFAULT_COLOR = '#64748b';
 
 const MAX_NAME = 30;
 
+/** Same cleaning as backup import (lib/text.ts), so the app's own backups always restore. */
 function normalize(input: CategoryInput): CategoryInput {
-  return { name: input.name.trim().replace(/\s+/g, ' '), emoji: input.emoji.trim() };
+  return { name: normalizeName(input.name), emoji: stripUnsafeChars(input.emoji).trim() };
 }
 
 /** Re-checks the form's rules before writing (the form is UX; this guards the data). */

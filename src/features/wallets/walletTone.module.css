@@ -1,0 +1,33 @@
+/*
+ * Sets --wallet to the wallet's accent color. Usage:
+ *   <span className={tone.tone} data-color={wallet.color}>…</span>
+ * then use var(--wallet) inside. A data attribute (not an inline style) keeps the
+ * strict Content-Security-Policy happy.
+ */
+.tone {
+  --wallet: var(--wallet-gray);
+}
+.tone[data-color='blue'] {
+  --wallet: var(--wallet-blue);
+}
+.tone[data-color='green'] {
+  --wallet: var(--wallet-green);
+}
+.tone[data-color='teal'] {
+  --wallet: var(--wallet-teal);
+}
+.tone[data-color='purple'] {
+  --wallet: var(--wallet-purple);
+}
+.tone[data-color='pink'] {
+  --wallet: var(--wallet-pink);
+}
+.tone[data-color='orange'] {
+  --wallet: var(--wallet-orange);
+}
+.tone[data-color='yellow'] {
+  --wallet: var(--wallet-yellow);
+}
+.tone[data-color='gray'] {
+  --wallet: var(--wallet-gray);
+}

@@ -23,6 +23,15 @@
   /* Charts: one hue for ranked bars (dataviz reference palette, blue slot) */
   --chart-bar: #2a78d6;
   --chart-track: #e1e0d9;
+  /* Wallet card accents (identity only; card text always uses --text tokens) */
+  --wallet-blue: #2563eb;
+  --wallet-green: #16a34a;
+  --wallet-teal: #0d9488;
+  --wallet-purple: #7c3aed;
+  --wallet-pink: #db2777;
+  --wallet-orange: #ea580c;
+  --wallet-yellow: #ca8a04;
+  --wallet-gray: #64748b;
 
   /* Type: system font = SF Pro on iPhone, nothing to download */
   --font:
@@ -66,5 +75,13 @@
     --focus: #8fb0ff;
     --chart-bar: #3987e5;
     --chart-track: #2c313a;
+    --wallet-blue: #5b8cff;
+    --wallet-green: #4ade80;
+    --wallet-teal: #2dd4bf;
+    --wallet-purple: #a78bfa;
+    --wallet-pink: #f472b6;
+    --wallet-orange: #fb923c;
+    --wallet-yellow: #facc15;
+    --wallet-gray: #94a3b8;
   }
 }

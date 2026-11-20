@@ -88,9 +88,13 @@ export async function setWalletArchived(id: string, archived: boolean): Promise<
   });
 }
 
-/** How many transactions use the wallet. */
-export function countTransactionsInWallet(id: string): Promise<number> {
-  return db.transactions.where('walletId').equals(id).count();
+/** How many transactions use the wallet (including transfers into it). */
+export async function countTransactionsInWallet(id: string): Promise<number> {
+  const [from, to] = await Promise.all([
+    db.transactions.where('walletId').equals(id).count(),
+    db.transactions.where('toWalletId').equals(id).count(),
+  ]);
+  return from + to;
 }
 
 /**

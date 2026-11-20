@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db.ts';
-import type { Category, TxType } from '../../db/types.ts';
+import type { Category, CategoryType } from '../../db/types.ts';
 import { listTransactions } from './transactionRepository.ts';
 
 /**
@@ -28,7 +28,7 @@ export function useCategoryMap() {
 }
 
 /** Live list of the non-archived categories of one type, in display order. */
-export function usePickableCategories(type: TxType) {
+export function usePickableCategories(type: CategoryType) {
   return useLiveQuery(async () => {
     const rows = await db.categories.where('type').equals(type).toArray();
     return rows.filter((c) => !c.archived).sort((a, b) => a.sortOrder - b.sortOrder);

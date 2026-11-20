@@ -37,6 +37,65 @@ function parseEdited(edit: (b: Record<string, unknown>) => void) {
   return parseBackup(JSON.stringify(backup));
 }
 
+describe('parseBackup transfers', () => {
+  /** validBackup plus a BDO wallet and a transfer Cash → BDO. */
+  function parseWithTransfer(edit: (t: Record<string, unknown>) => void = () => undefined) {
+    return parseEdited((b) => {
+      (b.wallets as unknown[]).push({ ...defaultWallet, id: 'w-bdo', name: 'BDO' });
+      const transfer: Record<string, unknown> = {
+        id: 't2',
+        type: 'transfer',
+        amountMinor: 100_000,
+        categoryId: '',
+        walletId: CASH_WALLET_ID,
+        toWalletId: 'w-bdo',
+        feeMinor: 1_500,
+        date: '2026-11-20',
+        note: '',
+        createdAt: 2,
+        updatedAt: 2,
+      };
+      edit(transfer);
+      (b.transactions as unknown[]).push(transfer);
+    });
+  }
+
+  it('parseBackup_ValidTransfer_Accepted', () => {
+    const result = parseWithTransfer();
+    expect(result.ok && result.backup.transactions[1]).toMatchObject({
+      type: 'transfer',
+      toWalletId: 'w-bdo',
+      feeMinor: 1_500,
+    });
+  });
+
+  it('parseBackup_ZeroFee_StoredAsNoFee', () => {
+    const result = parseWithTransfer((t) => (t.feeMinor = 0));
+    expect(result.ok && result.backup.transactions[1]).not.toHaveProperty('feeMinor');
+  });
+
+  it.each([
+    ['to itself', (t: Record<string, unknown>) => (t.toWalletId = CASH_WALLET_ID)],
+    ['to a missing wallet', (t: Record<string, unknown>) => (t.toWalletId = 'nope')],
+    ['without destination', (t: Record<string, unknown>) => delete t.toWalletId],
+    ['with a category', (t: Record<string, unknown>) => (t.categoryId = 'expense-food')],
+    ['negative fee', (t: Record<string, unknown>) => (t.feeMinor = -1)],
+    ['fractional fee', (t: Record<string, unknown>) => (t.feeMinor = 1.5)],
+    ['unsafe destination id', (t: Record<string, unknown>) => (t.toWalletId = '../x')],
+  ])('parseBackup_Transfer_%s_Rejects', (_label, edit) => {
+    expect(parseWithTransfer(edit).ok).toBe(false);
+  });
+
+  it('parseBackup_ExpenseWithFeeOrSecondWallet_Rejects', () => {
+    expect(parseEdited((b) => (firstTx(b).feeMinor = 100)).ok).toBe(false);
+    expect(parseEdited((b) => (firstTx(b).toWalletId = CASH_WALLET_ID)).ok).toBe(false);
+  });
+
+  it('parseBackup_ExpenseWithEmptyCategory_Rejects', () => {
+    expect(parseEdited((b) => (firstTx(b).categoryId = '')).ok).toBe(false);
+  });
+});
+
 describe('parseBackup', () => {
   it('parseBackup_ValidFile_RoundTrips', () => {
     const result = parseBackup(serializeBackup(validBackup()));

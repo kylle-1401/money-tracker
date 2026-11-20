@@ -1,17 +1,22 @@
 import type { Transaction } from '../../db/types.ts';
+import { effectOnWallet, netEffectMinor } from './effects.ts';
 
 /** Transactions that share one calendar date. */
 export interface DayGroup {
   date: string;
   items: Transaction[];
-  /** Income minus expenses for the day, in minor units. */
+  /**
+   * The day's change in minor units: income − expenses − transfer fees, or, when
+   * grouping for one wallet, the change to that wallet's balance.
+   */
   netMinor: number;
 }
 
 /**
  * Groups an already newest-first list into one group per date, keeping order.
+ * @param walletId when set (List filtered to one wallet), day totals are that wallet's.
  */
-export function groupByDay(transactions: Transaction[]): DayGroup[] {
+export function groupByDay(transactions: Transaction[], walletId?: string): DayGroup[] {
   const groups: DayGroup[] = [];
   for (const tx of transactions) {
     let group = groups.at(-1);
@@ -20,7 +25,7 @@ export function groupByDay(transactions: Transaction[]): DayGroup[] {
       groups.push(group);
     }
     group.items.push(tx);
-    group.netMinor += tx.type === 'income' ? tx.amountMinor : -tx.amountMinor;
+    group.netMinor += walletId === undefined ? netEffectMinor(tx) : effectOnWallet(tx, walletId);
   }
   return groups;
 }

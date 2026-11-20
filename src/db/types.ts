@@ -1,11 +1,18 @@
-/** Every transaction is one of these. The sign comes from the type, never the amount. */
-export type TxType = 'income' | 'expense';
+/** Categories are for income or expenses only (transfers have no category). */
+export type CategoryType = 'income' | 'expense';
+
+/**
+ * Every transaction is one of these. The sign comes from the type, never the amount.
+ * A transfer (slice 8) moves money between two wallets: it is not income or spending,
+ * only its optional fee is spending.
+ */
+export type TxType = CategoryType | 'transfer';
 
 /** A label such as "Food" or "Salary". Belongs to exactly one type. */
 export interface Category {
   id: string;
   name: string;
-  type: TxType;
+  type: CategoryType;
   emoji: string;
   /** Chart color (slice 2). */
   color: string;
@@ -46,15 +53,23 @@ export interface Wallet {
   sortOrder: number;
 }
 
-/** One income or expense entry. */
+/** One income, expense or transfer entry. */
 export interface Transaction {
   id: string;
   type: TxType;
-  /** Integer minor units (centavos), always > 0. */
+  /** Integer minor units (centavos), always > 0. For a transfer: the amount moved. */
   amountMinor: number;
+  /** The category; '' for transfers. */
   categoryId: string;
-  /** The wallet the money came into or went out of (schema v2). */
+  /**
+   * The wallet the money came into or went out of (schema v2).
+   * For a transfer: the wallet it left (the "from" wallet).
+   */
   walletId: string;
+  /** Transfers only: the wallet that received it. Never equal to walletId. */
+  toWalletId?: string;
+  /** Transfers only: fee charged on top, taken from the "from" wallet. ≥ 0. */
+  feeMinor?: number;
   /** Local calendar date, "YYYY-MM-DD". */
   date: string;
   note: string;

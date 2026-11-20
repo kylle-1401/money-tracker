@@ -105,12 +105,28 @@
   - 262 tests pass (+51); lint, typecheck, format and build are clean
   - Browser pane (production build, 390×844): created a real v1-format IndexedDB with 3 entries, then opened the new build → upgraded to v2, all 3 entries in Cash, balance ₱24,704.50 as calculated; added GCash (₱5,120 starting) through the UI, spent ₱300 from it → GCash ₱4,820, total ₱29,524.50 (matches hand calculation); rows show the wallet; Settings and Home OK in dark mode; no horizontal scroll. Only console error: the known service-worker limitation of the pane
 
+  - Committed `a6fd053`.
+- 2026-11-20: **Slice 8 (transfers)** on branch `feature/8-transfers`, not committed yet:
+  - New entry type **⇄ Transfer**: From, To (never the same wallet; the To list hides the From wallet), amount, optional **fee** (starts empty = 0 every time, never carried over; owner request), date, note, no category
+  - Business rules in one place (`transactions/effects.ts`): the From wallet loses amount + fee, the To wallet gains the amount; only the fee counts as spending (Money out, and a fixed "🔁 Transfer fees" row in "Where your money went")
+  - Rows show "📱 GCash → 💵 Cash", "Fee ₱15.00", and the unsigned amount moved
+  - List: **wallet filter chips** (`?wallet=<id>`); filtered day totals show that wallet's change (transfers in count as +)
+  - Dexie **schema v3**: index on `toWalletId` only (no data change), so a wallet that only received transfers can't be deleted
+  - Categories now use their own `CategoryType` (income/expense); `TxType` adds `transfer`
+  - Editing a transfer into an expense replaces the whole record (no stale second wallet)
+  - **Backup format v3** (transfers); a slice-7 app refuses v3 files as "made by a newer version". CSV columns: Date, Type, Wallet, To wallet, Category, Amount, Fee, Currency, Note
+  - Test setup: async lookups wait up to 3s (one timeout flake was seen once on a slow run)
+  - Security review (security-reviewer agent): passed, Low findings only. Fixed: balance math applies a (corrupt) self-transfer once; saving an income/expense now also checks the category exists and matches the type, the date, and the note length, the same checks backup import makes, so the app can't save something its own backup refuses to restore
+  - **Open questions for the owner:** should a fee be allowed to exceed the amount moved? Should archived wallets be blocked from new entries at the data level too (the form already hides them)?
+  - 310 tests pass (+43); lint, typecheck, format and build are clean
+  - Browser pane (production build, 390×844): the slice-7 database (v2) upgraded to v3 with the new index; transfer GCash → Cash ₱1,000 + ₱15 fee via the form → Cash ₱25,704.50, GCash ₱3,805.00, total ₱29,509.50, Money out ₱610.50, "Transfer fees ₱15.00" row, today's total −₱365 (all match hand calculation); GCash filter shows −₱1,315 for today; dark mode OK; no horizontal scroll
+
 ## In progress
-- Slice 7 waiting for review and the go-ahead to commit.
+- Slice 8 waiting for review and the go-ahead to commit.
 
 ## Next
-- After slice 7 deploys: owners should **Save backup before tapping Reload** on that update (the storage upgrade runs once and can't be undone).
-- Slice 8: transfers. Slice 9: budget alerts. Then desktop layout.
+- When this deploys: owners should **Save backup before tapping Reload** on that update (the storage upgrades run once and can't be undone).
+- Slice 9: budget alerts. Then desktop layout.
 - iPhone test of the live app: Airplane Mode, install tip, share sheet, date picker.
 - Follow-ups: paging for long transaction lists; recheck the `npm audit` advisories.
 

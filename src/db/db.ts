@@ -42,6 +42,12 @@ export class MoneyDb extends Dexie {
           });
       });
 
+    // v3 (slice 8): transfers. Indexes the receiving wallet so "is this wallet used?"
+    // also finds transfers into it. No data changes: existing rows have no transfers.
+    this.version(3).stores({
+      transactions: 'id, date, categoryId, type, walletId, toWalletId',
+    });
+
     // Runs once, when the database is first created on this device (new installs
     // skip the upgrade above, so they need the default wallet here too).
     this.on('populate', (tx) => {

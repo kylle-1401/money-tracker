@@ -21,8 +21,11 @@ import { DEFAULT_CURRENCY, isSupportedCurrency } from '../settings/currencies.ts
  * - v1 (slices 4–6): categories + transactions
  * - v2 (slice 7): adds wallets; every transaction has a walletId. v1 files are
  *   upgraded on read: their entries go into "Cash", like the database upgrade.
+ * - v3 (slice 8): transactions may be transfers (type "transfer", no category,
+ *   toWalletId, optional feeMinor). Bumped so a slice-7 app refuses these files with
+ *   "made by a newer version" instead of calling them damaged.
  */
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 export const BACKUP_APP_ID = 'money-tracker';
 
 /**
@@ -83,10 +86,13 @@ const walletSchema = z.object({
 
 const transactionSchema = z.object({
   id: idSchema,
-  type: typeSchema,
+  type: z.enum(['income', 'expense', 'transfer']),
   amountMinor: z.number().int().min(1).max(MAX_AMOUNT_MINOR),
-  categoryId: idSchema,
+  // '' only for transfers (checked below)
+  categoryId: z.union([idSchema, z.literal('')]),
   walletId: idSchema,
+  toWalletId: idSchema.optional(),
+  feeMinor: z.number().int().min(0).max(MAX_AMOUNT_MINOR).optional(),
   date: z.string().refine(isValidDateString, 'Invalid date'),
   note: z.string().transform(clean).pipe(z.string().max(200)),
   createdAt: z.number().int().nonnegative(),
@@ -133,6 +139,22 @@ const backupSchema = z
         return;
       }
       txIds.add(t.id);
+      if (t.type === 'transfer') {
+        // Same rules as transactionRepository: no category, a different real wallet.
+        if (t.categoryId !== '') {
+          ctx.addIssue({ code: 'custom', message: 'A transfer has a category' });
+          return;
+        }
+        if (!t.toWalletId || !walletIds.has(t.toWalletId) || t.toWalletId === t.walletId) {
+          ctx.addIssue({ code: 'custom', message: 'A transfer has a bad destination wallet' });
+          return;
+        }
+        continue;
+      }
+      if (t.toWalletId !== undefined || t.feeMinor !== undefined) {
+        ctx.addIssue({ code: 'custom', message: 'Only transfers have a second wallet or a fee' });
+        return;
+      }
       const categoryType = categoryTypes.get(t.categoryId);
       if (categoryType === undefined) {
         ctx.addIssue({ code: 'custom', message: 'A transaction uses a missing category' });
@@ -177,7 +199,11 @@ export function parseBackup(text: string): ParseResult {
       error: 'This backup is damaged or was edited, so it can’t be restored safely.',
     };
   }
-  return { ok: true, backup: { ...result.data, app: BACKUP_APP_ID } };
+  // A zero fee is stored as "no fee", the same as the app does.
+  const transactions = result.data.transactions.map(({ feeMinor, ...t }) =>
+    feeMinor ? { ...t, feeMinor } : t,
+  );
+  return { ok: true, backup: { ...result.data, transactions, app: BACKUP_APP_ID } };
 }
 
 /**

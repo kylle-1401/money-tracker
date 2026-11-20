@@ -193,7 +193,7 @@ describe('Wallets on Home and in the entry form', () => {
     renderAt(`/transactions/${txId}`);
 
     const paidFrom = await screen.findByRole('group', { name: 'Paid from' });
-    expect(within(paidFrom).getByRole('radio', { name: /GCash/ })).toBeChecked();
+    expect(await within(paidFrom).findByRole('radio', { name: 'GCash' })).toBeChecked();
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await screen.findByRole('heading', { level: 1, name: 'Transactions' });

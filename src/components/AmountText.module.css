@@ -11,3 +11,7 @@
 .expense {
   color: var(--text);
 }
+
+.transfer {
+  color: var(--text-muted);
+}

@@ -2,6 +2,37 @@
   color: var(--text-muted);
 }
 
+/* Wallet filter: one swipeable row of chips */
+.filters {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0 calc(var(--space-4) * -1) var(--space-4);
+  padding: 2px var(--space-4);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Selected = filled accent ring + bold (not color alone) */
+.chip[aria-pressed='true'] {
+  border: 2px solid var(--wallet, var(--accent));
+  background: color-mix(in srgb, var(--wallet, var(--accent)) 14%, var(--surface));
+  font-weight: 700;
+}
+
 .day + .day {
   margin-top: var(--space-5);
 }

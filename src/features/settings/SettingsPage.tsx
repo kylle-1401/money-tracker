@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import BackupSection from '../backup/BackupSection.tsx';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PageHeader from '../../components/PageHeader.tsx';
-import type { TxType } from '../../db/types.ts';
+import type { CategoryType } from '../../db/types.ts';
 import { CURRENCIES } from './currencies.ts';
 import { useCurrency } from './currencyContext.ts';
 import { setCurrency } from './settingsRepository.ts';
@@ -139,7 +139,7 @@ function WalletSection() {
 }
 
 /** One type's categories (active, then archived) with an "Add category" row. */
-function CategorySection({ type, title }: { type: TxType; title: string }) {
+function CategorySection({ type, title }: { type: CategoryType; title: string }) {
   const categories = useLiveQuery(() => listCategories(type), [type]);
   const headingId = `${type}-categories-heading`;
 

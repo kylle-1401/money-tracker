@@ -1,4 +1,4 @@
-import type { Category, TxType, Wallet } from './types.ts';
+import type { Category, CategoryType, Wallet } from './types.ts';
 
 /**
  * The wallet every install starts with. Existing entries are moved into it by the
@@ -39,7 +39,7 @@ const income: SeedRow[] = [
   ['Other', '💰', '#64748b'],
 ];
 
-function toCategories(rows: SeedRow[], type: TxType): Category[] {
+function toCategories(rows: SeedRow[], type: CategoryType): Category[] {
   return rows.map(([name, emoji, color], i) => ({
     // Stable ids (not random) so seeded categories match across devices and backups.
     id: `${type}-${name.toLowerCase().replace(/[^a-z]+/g, '-')}`,

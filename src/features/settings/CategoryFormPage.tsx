@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { db } from '../../db/db.ts';
-import type { TxType } from '../../db/types.ts';
+import type { CategoryType } from '../../db/types.ts';
 import { useGoBack } from '../../lib/useGoBack.ts';
 import EmptyState from '../../components/EmptyState.tsx';
 import FullScreenPage from '../../components/FullScreenPage.tsx';
@@ -35,7 +35,7 @@ export default function CategoryFormPage() {
   );
   const usage = useLiveQuery(async () => (id ? countTransactionsInCategory(id) : 0), [id]);
 
-  const newType: TxType = searchParams.get('type') === 'income' ? 'income' : 'expense';
+  const newType: CategoryType = searchParams.get('type') === 'income' ? 'income' : 'expense';
 
   if (isEdit && (existing === undefined || usage === undefined)) {
     return (

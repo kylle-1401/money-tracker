@@ -69,6 +69,8 @@ export default function TransactionFormPage() {
                   amount: minorToInput(existing.amountMinor),
                   categoryId: existing.categoryId,
                   walletId: existing.walletId,
+                  toWalletId: existing.toWalletId ?? '',
+                  fee: existing.feeMinor ? minorToInput(existing.feeMinor) : '',
                   date: existing.date,
                   note: existing.note,
                 }
@@ -77,6 +79,8 @@ export default function TransactionFormPage() {
                   amount: '',
                   categoryId: '',
                   walletId: defaultWalletId ?? '',
+                  toWalletId: '',
+                  fee: '',
                   date: toLocalDateString(new Date()),
                   note: '',
                 }

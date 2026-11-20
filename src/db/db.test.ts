@@ -52,7 +52,7 @@ describe('database upgrade v1 → v2', () => {
     const upgraded = new MoneyDb(NAME);
     await upgraded.open();
 
-    expect(upgraded.verno).toBe(2);
+    expect(upgraded.verno).toBe(3); // v1 → v2 → v3 in one open
     const wallets = await upgraded.wallets.toArray();
     expect(wallets).toEqual([
       expect.objectContaining({ id: CASH_WALLET_ID, name: 'Cash', startingBalanceMinor: 0 }),
@@ -79,6 +79,31 @@ describe('database upgrade v1 → v2', () => {
     const upgraded = new MoneyDb(NAME);
     await upgraded.open();
     expect((await upgraded.wallets.toArray()).map((w) => w.id)).toEqual([CASH_WALLET_ID]);
+    upgraded.close();
+  });
+
+  it('Upgrade_V2Database_AddsTransferIndexAndKeepsData', async () => {
+    // A phone that installed slice 7 (schema v2).
+    const v2 = new Dexie(NAME);
+    v2.version(1).stores({
+      transactions: 'id, date, categoryId, type',
+      categories: 'id, type',
+      settings: 'key',
+    });
+    v2.version(2).stores({
+      transactions: 'id, date, categoryId, type, walletId',
+      wallets: 'id, sortOrder',
+    });
+    await v2.open();
+    await v2.table('wallets').add({ id: CASH_WALLET_ID, name: 'Cash' });
+    await v2.table('transactions').add({ id: 'x', walletId: CASH_WALLET_ID, date: '2026-11-20' });
+    v2.close();
+
+    const upgraded = new MoneyDb(NAME);
+    await upgraded.open();
+    expect(upgraded.verno).toBe(3);
+    expect(await upgraded.transactions.get('x')).toMatchObject({ walletId: CASH_WALLET_ID });
+    expect(await upgraded.transactions.where('toWalletId').equals(CASH_WALLET_ID).count()).toBe(0);
     upgraded.close();
   });
 

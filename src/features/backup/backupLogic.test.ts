@@ -445,16 +445,118 @@ describe('CSV', () => {
           createdAt: 1,
           updatedAt: 1,
         },
+        {
+          id: 'c',
+          type: 'transfer',
+          amountMinor: 100000,
+          categoryId: '',
+          walletId: 'wallet-cash',
+          toWalletId: 'w-bdo',
+          feeMinor: 1500,
+          date: '2026-11-20',
+          note: 'Rent fund',
+          createdAt: 3,
+          updatedAt: 3,
+        },
       ],
       categories,
-      new Map([[defaultWallet.id, defaultWallet]]),
+      new Map([
+        [defaultWallet.id, defaultWallet],
+        ['w-bdo', { ...defaultWallet, id: 'w-bdo', name: 'BDO' }],
+      ]),
       'PHP',
     );
 
     expect(csv).toBe(
-      '﻿Date,Type,Wallet,Category,Amount,Currency,Note\r\n' +
-        '2026-11-01,Income,Cash,Salary,25000.00,PHP,\r\n' +
-        '2026-11-19,Expense,Cash,Food,-245.50,PHP,"Jollibee, Makati"\r\n',
+      '﻿Date,Type,Wallet,To wallet,Category,Amount,Fee,Currency,Note\r\n' +
+        '2026-11-01,Income,Cash,,Salary,25000.00,,PHP,\r\n' +
+        '2026-11-19,Expense,Cash,,Food,-245.50,,PHP,"Jollibee, Makati"\r\n' +
+        '2026-11-20,Transfer,Cash,BDO,,1000.00,15.00,PHP,Rent fund\r\n',
     );
+  });
+});
+
+describe('backup transfers (v3)', () => {
+  async function withTransfer() {
+    const bdo = await addWallet({
+      name: 'BDO',
+      emoji: '🏦',
+      color: 'blue',
+      startingBalanceMinor: 0,
+    });
+    await addTransaction({
+      type: 'transfer',
+      amountMinor: 100_000,
+      categoryId: '',
+      walletId: CASH_WALLET_ID,
+      toWalletId: bdo,
+      feeMinor: 1_500,
+      date: '2026-11-20',
+      note: '',
+    });
+    return bdo;
+  }
+
+  it('ExportThenReplace_RestoresTransfer', async () => {
+    const bdo = await withTransfer();
+    const text = serializeBackup(await createBackup());
+    await db.delete();
+    await db.open();
+
+    const parsed = parseBackup(text);
+    if (!parsed.ok) throw new Error(parsed.error);
+    await importBackup(parsed.backup, 'replace');
+
+    const [restored] = await db.transactions.toArray();
+    expect(restored).toMatchObject({ type: 'transfer', toWalletId: bdo, feeMinor: 1_500 });
+  });
+
+  it('Merge_TransferIntoFoldedWallet_RemapsDestination', async () => {
+    const localBdo = await addWallet({
+      name: 'BDO',
+      emoji: '🏦',
+      color: 'blue',
+      startingBalanceMinor: 0,
+    });
+    const backup = await createBackup();
+    backup.wallets.push({ ...defaultWallet, id: 'other-bdo', name: 'bdo', sortOrder: 9 });
+    backup.transactions.push({
+      id: 'tr',
+      type: 'transfer',
+      amountMinor: 500,
+      categoryId: '',
+      walletId: CASH_WALLET_ID,
+      toWalletId: 'other-bdo',
+      date: '2026-11-20',
+      note: '',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    await importBackup(backup, 'merge');
+
+    expect((await db.transactions.get('tr'))?.toWalletId).toBe(localBdo);
+  });
+
+  it('Merge_FoldingMakesTransferToItself_RejectsAndChangesNothing', async () => {
+    // Here "Cash" exists; the backup has a transfer from Cash to its own "cash" wallet
+    // with another id, which folds into this Cash.
+    const backup = await createBackup();
+    backup.wallets.push({ ...defaultWallet, id: 'other-cash', name: 'CASH', sortOrder: 9 });
+    backup.transactions.push({
+      id: 'loop',
+      type: 'transfer',
+      amountMinor: 500,
+      categoryId: '',
+      walletId: CASH_WALLET_ID,
+      toWalletId: 'other-cash',
+      date: '2026-11-20',
+      note: '',
+      createdAt: 1,
+      updatedAt: 1,
+    });
+
+    await expect(importBackup(backup, 'merge')).rejects.toThrow(ImportConflictError);
+    expect(await db.transactions.get('loop')).toBeUndefined();
   });
 });

@@ -52,8 +52,9 @@ export default function DashboardPage() {
     const balances = walletBalances(wallets, transactions);
     const total = totalBalanceMinor(wallets, transactions);
     const activeWallets = wallets.filter((w) => !w.archived);
-    // Wallet names on rows only help once there's more than one wallet.
-    const walletMap = wallets.length > 1 ? toWalletMap(wallets) : null;
+    const walletMap = toWalletMap(wallets);
+    // Wallet names on income/expense rows only help once there's more than one wallet.
+    const showWallet = wallets.length > 1;
 
     const overview = (
       <>
@@ -92,6 +93,7 @@ export default function DashboardPage() {
             transactions={transactions}
             categories={categories}
             walletMap={walletMap}
+            showWallet={showWallet}
             month={month}
             thisMonth={thisMonth}
             onMonthChange={goToMonth}
@@ -115,7 +117,8 @@ export default function DashboardPage() {
 interface MonthSectionProps {
   transactions: Transaction[];
   categories: ReadonlyMap<string, Category>;
-  walletMap: ReadonlyMap<string, Wallet> | null;
+  walletMap: ReadonlyMap<string, Wallet>;
+  showWallet: boolean;
   month: MonthKey;
   thisMonth: MonthKey;
   onMonthChange: (month: MonthKey) => void;
@@ -126,6 +129,7 @@ function MonthSection({
   transactions,
   categories,
   walletMap,
+  showWallet,
   month,
   thisMonth,
   onMonthChange: goToMonth,
@@ -207,7 +211,8 @@ function MonthSection({
               <TransactionRow
                 transaction={tx}
                 category={categories.get(tx.categoryId)}
-                wallet={walletMap?.get(tx.walletId)}
+                wallets={walletMap}
+                showWallet={showWallet}
               />
             </li>
           ))}

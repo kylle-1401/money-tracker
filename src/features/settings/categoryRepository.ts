@@ -1,5 +1,5 @@
 import { db } from '../../db/db.ts';
-import type { Category, TxType } from '../../db/types.ts';
+import type { Category, CategoryType } from '../../db/types.ts';
 import { normalizeName, stripUnsafeChars } from '../../lib/text.ts';
 
 /** What the user can set on a category. Type is fixed once created (see addCategory). */
@@ -19,7 +19,7 @@ function normalize(input: CategoryInput): CategoryInput {
 }
 
 /** Re-checks the form's rules before writing (the form is UX; this guards the data). */
-async function assertValid(input: CategoryInput, type: TxType, excludeId?: string) {
+async function assertValid(input: CategoryInput, type: CategoryType, excludeId?: string) {
   if (!input.name) throw new Error('Name is required.');
   if (input.name.length > MAX_NAME) throw new Error(`Keep the name under ${MAX_NAME} characters.`);
   if (!input.emoji) throw new Error('Pick an icon.');
@@ -37,7 +37,7 @@ async function assertValid(input: CategoryInput, type: TxType, excludeId?: strin
  * Creates a category at the end of its type's list. Type can't change later, because
  * existing transactions rely on a category's type matching their own.
  */
-export async function addCategory(type: TxType, raw: CategoryInput): Promise<string> {
+export async function addCategory(type: CategoryType, raw: CategoryInput): Promise<string> {
   const input = normalize(raw);
   await assertValid(input, type);
   const sameType = await db.categories.where('type').equals(type).toArray();
@@ -89,7 +89,7 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 /** All categories of one type in display order, active first, then archived. */
-export async function listCategories(type: TxType): Promise<Category[]> {
+export async function listCategories(type: CategoryType): Promise<Category[]> {
   const rows = await db.categories.where('type').equals(type).toArray();
   return rows.sort((a, b) => Number(a.archived) - Number(b.archived) || a.sortOrder - b.sortOrder);
 }

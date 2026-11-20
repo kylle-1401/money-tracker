@@ -41,10 +41,10 @@
   font-weight: 500;
 }
 
-/* Expense / Income toggle */
+/* Expense / Income / Transfer toggle */
 .segmented {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-1);
   margin: 0;
   padding: var(--space-1);
@@ -166,6 +166,51 @@
 
 .walletChip.selected .walletName {
   font-weight: 700;
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Transfer fee: a normal-size amount field */
+.feeWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 200px;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.feeWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.feeWrap:has([aria-invalid='true']) {
+  border-color: var(--expense);
+}
+
+.feeSymbol {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.feeInput {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-min);
+  border: 0;
+  background: transparent;
+  font-size: var(--text-md); /* >=16px: no iOS zoom on focus */
+  font-variant-numeric: tabular-nums;
+}
+
+.feeInput:focus {
+  outline: none; /* the wrapper shows focus */
 }
 
 /* Category tiles: 4 per row on iPhone 14 */

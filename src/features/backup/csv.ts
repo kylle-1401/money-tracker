@@ -21,9 +21,13 @@ export function csvTextCell(value: string): string {
   return /[",;\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
+const TYPE_LABELS = { income: 'Income', expense: 'Expense', transfer: 'Transfer' } as const;
+
 /**
- * One row per transaction, oldest first. Expenses are negative so a SUM of the
- * Amount column equals the balance.
+ * One row per transaction, oldest first.
+ * - Income is positive and expenses negative.
+ * - Transfers show the amount moved, unsigned (it stays your money), with the
+ *   receiving wallet in "To wallet" and any fee in "Fee".
  */
 export function transactionsToCsv(
   transactions: readonly Transaction[],
@@ -31,17 +35,32 @@ export function transactionsToCsv(
   wallets: ReadonlyMap<string, Wallet>,
   currency: string,
 ): string {
-  const header = ['Date', 'Type', 'Wallet', 'Category', 'Amount', 'Currency', 'Note'];
+  const header = [
+    'Date',
+    'Type',
+    'Wallet',
+    'To wallet',
+    'Category',
+    'Amount',
+    'Fee',
+    'Currency',
+    'Note',
+  ];
+  const walletName = (id: string | undefined) =>
+    csvTextCell(wallets.get(id ?? '')?.name ?? 'Unknown wallet');
   const rows = [...transactions]
     .sort((a, b) => (a.date === b.date ? a.createdAt - b.createdAt : a.date < b.date ? -1 : 1))
     .map((t) => {
       const amount = minorToInput(t.amountMinor);
+      const isTransfer = t.type === 'transfer';
       return [
         t.date,
-        t.type === 'income' ? 'Income' : 'Expense',
-        csvTextCell(wallets.get(t.walletId)?.name ?? 'Unknown wallet'),
-        csvTextCell(categories.get(t.categoryId)?.name ?? 'Unknown category'),
-        t.type === 'income' ? amount : `-${amount}`,
+        TYPE_LABELS[t.type],
+        walletName(t.walletId),
+        isTransfer ? walletName(t.toWalletId) : '',
+        isTransfer ? '' : csvTextCell(categories.get(t.categoryId)?.name ?? 'Unknown category'),
+        t.type === 'expense' ? `-${amount}` : amount,
+        isTransfer && t.feeMinor ? minorToInput(t.feeMinor) : '',
         currency,
         csvTextCell(t.note),
       ].join(',');

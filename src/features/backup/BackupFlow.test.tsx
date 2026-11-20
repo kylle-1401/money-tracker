@@ -90,7 +90,7 @@ describe('Save backup', () => {
     const [filename, content, type] = first(saveFileMock.mock.calls);
     expect(filename).toMatch(/\.csv$/);
     expect(type).toBe('text/csv');
-    expect(content).toContain('2026-11-19,Expense,Cash,Food,-245.50,PHP,Jollibee');
+    expect(content).toContain('2026-11-19,Expense,Cash,,Food,-245.50,,PHP,Jollibee');
     expect(await getLastBackupAt()).toBeNull(); // CSV can't restore, so it isn't a backup
   });
 

@@ -150,7 +150,14 @@ export async function importBackup(backup: Backup, mode: ImportMode): Promise<Im
       ...t,
       categoryId: remap.get(t.categoryId) ?? t.categoryId,
       walletId: walletMerge.remap.get(t.walletId) ?? t.walletId,
+      ...(t.toWalletId ? { toWalletId: walletMerge.remap.get(t.toWalletId) ?? t.toWalletId } : {}),
     }));
+    // Folding wallets by name can turn "GCash → G-Cash" into a transfer to itself.
+    if (transactions.some((t) => t.type === 'transfer' && t.toWalletId === t.walletId)) {
+      throw new ImportConflictError(
+        'This backup has a transfer between two wallets that match one wallet here, so it can’t be merged. Use “Replace all my data” or choose another backup.',
+      );
+    }
 
     await assertWithinCaps(
       walletMerge.total,

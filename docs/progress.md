@@ -82,8 +82,10 @@
   - Verified locally: the full CI step chain passes from a clean `npm ci`. The lockfile includes the Linux build bindings (rolldown, rollup, lightningcss)
   - **Not verified:** the workflow on GitHub itself (needs the repo)
 
+- 2026-11-20: Merged the slices into `main`. Before republishing, the history was rewritten so the AI assistant instruction files (kept locally, now in `.gitignore`) were never committed.
+
 ## In progress
-- Waiting for the owner: create the GitHub repo and set Pages → Source: GitHub Actions; approve merging the slices into `main` and the first push/publish.
+- Waiting for the owner: publish the repo from GitHub Desktop and set Pages → Source: GitHub Actions.
 
 ## Next
 - After the first deploy: install on the iPhone from the Pages URL, then test Airplane Mode, the install tip, the share sheet and the date picker.

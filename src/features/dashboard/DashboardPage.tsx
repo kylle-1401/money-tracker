@@ -14,6 +14,9 @@ import InstallHint from '../pwa/InstallHint.tsx';
 import { monthTotals, spendingByCategory, totalBalanceMinor, walletBalances } from './summary.ts';
 import { toWalletMap, useWallets } from '../wallets/hooks.ts';
 import WalletCards from '../wallets/WalletCards.tsx';
+import { useLiveQuery } from 'dexie-react-hooks';
+import BudgetMeter from '../budget/BudgetMeter.tsx';
+import { getMonthlyBudget } from '../budget/budgetRepository.ts';
 import styles from './DashboardPage.module.css';
 
 const MONTH_PARAM = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -135,9 +138,14 @@ function MonthSection({
   onMonthChange: goToMonth,
 }: MonthSectionProps) {
   const currency = useCurrency();
+  const monthlyBudget = useLiveQuery(getMonthlyBudget, []);
   const totals = monthTotals(transactions, month);
   const net = totals.incomeMinor - totals.expenseMinor;
   const spending = spendingByCategory(transactions, month, categories);
+  const categoryBudgets = new Map<string, number>();
+  for (const c of categories.values()) {
+    if (c.type === 'expense' && c.budgetMinor) categoryBudgets.set(c.id, c.budgetMinor);
+  }
   const recent = transactions.slice(0, RECENT_COUNT);
   const label = monthLabel(month);
 
@@ -185,6 +193,19 @@ function MonthSection({
         <strong>{formatMinor(Math.abs(net), currency)}</strong> in {label}
       </p>
 
+      {/* Budget: the current budget is applied to whichever month is shown (assumption
+          confirmed with the owner: no per-month budget history). Spending = Money out. */}
+      {monthlyBudget ? (
+        <BudgetMeter spentMinor={totals.expenseMinor} budgetMinor={monthlyBudget} />
+      ) : (
+        monthlyBudget === null &&
+        month === thisMonth && (
+          <Link to="/settings?focus=budget" className={styles.setBudget}>
+            Set a monthly budget
+          </Link>
+        )
+      )}
+
       <section className={styles.card} aria-labelledby="where-label">
         <h2 id="where-label" className={styles.sectionTitle}>
           Where your money went
@@ -192,7 +213,7 @@ function MonthSection({
         {spending.length === 0 ? (
           <p className={styles.muted}>No spending in {label}.</p>
         ) : (
-          <SpendingBars rows={spending} />
+          <SpendingBars rows={spending} budgets={categoryBudgets} />
         )}
       </section>
 

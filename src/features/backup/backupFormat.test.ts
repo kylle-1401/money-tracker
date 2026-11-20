@@ -96,6 +96,38 @@ describe('parseBackup transfers', () => {
   });
 });
 
+describe('parseBackup budgets (v4)', () => {
+  it('parseBackup_Budgets_RoundTrip', () => {
+    const result = parseEdited((b) => {
+      b.monthlyBudgetMinor = 1_200_000;
+      first(b.categories as Array<Record<string, unknown>>).budgetMinor = 600_000; // Food
+    });
+    expect(result.ok && result.backup.monthlyBudgetMinor).toBe(1_200_000);
+    expect(result.ok && first(result.backup.categories).budgetMinor).toBe(600_000);
+  });
+
+  it.each([
+    ['zero monthly budget', (b: Record<string, unknown>) => (b.monthlyBudgetMinor = 0)],
+    ['fractional monthly budget', (b: Record<string, unknown>) => (b.monthlyBudgetMinor = 1.5)],
+    [
+      'negative category budget',
+      (b: Record<string, unknown>) =>
+        (first(b.categories as Array<Record<string, unknown>>).budgetMinor = -1),
+    ],
+    [
+      'income category with a budget',
+      (b: Record<string, unknown>) => {
+        const salary = (b.categories as Array<Record<string, unknown>>).find(
+          (c) => c.id === 'income-salary',
+        );
+        if (salary) salary.budgetMinor = 100;
+      },
+    ],
+  ])('parseBackup_%s_Rejects', (_label, edit) => {
+    expect(parseEdited(edit).ok).toBe(false);
+  });
+});
+
 describe('parseBackup', () => {
   it('parseBackup_ValidFile_RoundTrips', () => {
     const result = parseBackup(serializeBackup(validBackup()));

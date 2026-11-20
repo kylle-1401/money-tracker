@@ -1,6 +1,6 @@
 # Plan: Wallets, transfers and budget alerts
 
-**Status:** Approved 2026-11-20. Slice 7 built (see `docs/progress.md`).
+**Status:** Approved 2026-11-20. Slices 7 and 8 committed; slice 9 built (see `docs/progress.md`).
 **Date:** 2026-11-20
 
 ## Goal

@@ -1,7 +1,11 @@
 import { useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getDefaultWalletId, rememberLastWallet } from '../wallets/walletRepository.ts';
-import { toLocalDateString } from '../../lib/dates.ts';
+import { monthKeyOf, toLocalDateString } from '../../lib/dates.ts';
+import { useEffect } from 'react';
+import { saveAndCheckBudgets } from '../budget/checkBudgets.ts';
+import { dismissBudgetAlerts } from '../budget/budgetAlerts.ts';
+import { useCurrency } from '../settings/currencyContext.ts';
 import { minorToInput } from '../../lib/money.ts';
 import { useGoBack } from '../../lib/useGoBack.ts';
 import EmptyState from '../../components/EmptyState.tsx';
@@ -27,14 +31,26 @@ export default function TransactionFormPage() {
   const goBack = useGoBack('/transactions');
   // New entries start in the last wallet used (read once; editing ignores it).
   const defaultWalletId = useLiveQuery(getDefaultWalletId, []);
+  const currency = useCurrency();
+  // An alert from an earlier save is old news once you start the next entry.
+  useEffect(() => dismissBudgetAlerts(), []);
 
   async function handleSave(input: TransactionInput) {
-    if (isEdit) {
-      await updateTransaction(id, input);
-    } else {
-      await addTransaction(input);
-      await rememberLastWallet(input.walletId);
-    }
+    // Budget alerts (slice 9): compare the entry's month before and after the save.
+    await saveAndCheckBudgets(monthKeyOf(input.date), currency, async () => {
+      if (isEdit) {
+        await updateTransaction(id, input);
+      } else {
+        await addTransaction(input);
+        try {
+          await rememberLastWallet(input.walletId);
+        } catch (error) {
+          // The entry is saved; failing to remember the wallet must not show
+          // "Could not save" (a retry would add a duplicate).
+          console.error('Could not remember the last wallet', error);
+        }
+      }
+    });
     goBack();
   }
 

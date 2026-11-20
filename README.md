@@ -3,6 +3,12 @@
 A private, offline money tracker for your phone. Type in money coming in and going
 out, and see your balance and where your money goes.
 
+- **Wallets:** keep track of each place your money is kept (cash, e-wallets, banks, credit
+  cards). Just a name and an icon: no bank logins or account numbers.
+- **Transfers:** move money between your wallets, with an optional fee.
+- **Budgets:** set a monthly budget (and per category, if you like). The app warns you at
+  80% and when you go over.
+
 - **Private:** your data stays on your device. There are no accounts, ads, analytics or servers.
 - **Offline:** after the first visit, it works with no connection.
 - **Free:** hosted as static files on GitHub Pages.

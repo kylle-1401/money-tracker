@@ -121,12 +121,28 @@
   - 310 tests pass (+43); lint, typecheck, format and build are clean
   - Browser pane (production build, 390×844): the slice-7 database (v2) upgraded to v3 with the new index; transfer GCash → Cash ₱1,000 + ₱15 fee via the form → Cash ₱25,704.50, GCash ₱3,805.00, total ₱29,509.50, Money out ₱610.50, "Transfer fees ₱15.00" row, today's total −₱365 (all match hand calculation); GCash filter shows −₱1,315 for today; dark mode OK; no horizontal scroll
 
+  - Committed `87b9007`.
+- 2026-11-20: **Slice 9 (budget alerts)** on branch `feature/9-budgets`, not committed yet:
+  - Settings → **Monthly budget** (overall; empty = none) and an optional **budget per expense category** on its edit page (income categories have none). Set once, applies to every month; no rollover
+  - Overall spending = expenses + transfer fees (same as Money out); a category's = its expenses. Warn from **80%**, "over" above 100% (integer math)
+  - Home: **Budget meter** "₱860.50 of ₱1,000.00 · ⚠️ 86% used · ₱139.50 left" (amber at 80%, red "Over budget by …" when over; words carry the state), or a "Set a monthly budget" link; category usage under its bar ("‼️ 113% of ₱700.00 budget")
+  - **Alert banner** at the top right after saving an entry that crosses 80% or goes over (overall and/or category), once per crossing; stays until OK or until the next entry is started. In-app only: no phone notifications without a push server
+  - Storage: overall budget in `settings` (`monthlyBudget`); `budgetMinor` on categories (unindexed, so no schema version)
+  - **Backup format v4** (budgets). Replace restores the backup's budget (or none); merge keeps this phone's, like the currency
+  - Update bar now says "Tip: save a backup in Settings first."
+  - Shared `parseOptionalAmountToMinor` in `lib/money.ts` (fee, starting balance, budgets)
+  - Fixed during testing: "Budget saved." vanished immediately (the form remounted on save); the message now lives in the section
+  - Security review (security-reviewer agent): passed, Low findings only. Fixed: merge keeps this phone's category budgets (the backup's only fills a gap), like the monthly budget; budget percent math capped so it stays exact at absurd totals; a failure to remember the last wallet after a save no longer shows "Could not save" (a retry would duplicate the entry)
+  - Tests: per-test limit raised to 15s (`vite.config.ts`). This machine slowed down a lot at times (full runs took 17–94s instead of ~6s), and the first full-app test in a file sometimes passed 5s. Assertions unchanged. Watch the CI run
+  - 354 tests pass (+44); lint, typecheck, format and build are clean
+  - Browser pane (production build, 390×844): set ₱1,000 budget (this month already ₱610.50) → added ₱250 Food via the form → banner "You've used 86% of your November budget." → Home meter ₱860.50 of ₱1,000.00, 86% used, ₱139.50 left; Food budget ₱700 → "‼️ 113% of ₱700.00 budget" (all match hand calculation); dark mode OK; no horizontal scroll
+
 ## In progress
-- Slice 8 waiting for review and the go-ahead to commit.
+- Slice 9 waiting for review and the go-ahead to commit.
 
 ## Next
 - When this deploys: owners should **Save backup before tapping Reload** on that update (the storage upgrades run once and can't be undone).
-- Slice 9: budget alerts. Then desktop layout.
+- Desktop layout. Open questions from slice 8 (fee larger than amount? archived wallets blocked at the data level?).
 - iPhone test of the live app: Airplane Mode, install tip, share sheet, date picker.
 - Follow-ups: paging for long transaction lists; recheck the `npm audit` advisories.
 

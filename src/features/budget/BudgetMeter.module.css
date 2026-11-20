@@ -1,0 +1,64 @@
+.card {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.figures {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Meter: thin track, square at the baseline, 4px rounded end */
+.track {
+  height: 10px;
+  border-radius: 0 5px 5px 0;
+  background: var(--chart-track);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 0 5px 5px 0;
+}
+
+/* Status colors are reserved for state and always come with words */
+.ok {
+  background: var(--chart-bar);
+}
+
+.warning {
+  background: var(--warning);
+}
+
+.over {
+  background: var(--expense);
+}
+
+.status {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.overText {
+  color: var(--expense);
+  font-weight: 600;
+}

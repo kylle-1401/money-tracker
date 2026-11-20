@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { WALLET_COLORS } from '../../db/types.ts';
-import { parseAmountToMinor } from '../../lib/money.ts';
+import { parseOptionalAmountToMinor } from '../../lib/money.ts';
 
 /**
  * Parses a starting balance as typed: empty or zero means 0, otherwise the same rules
@@ -8,11 +8,7 @@ import { parseAmountToMinor } from '../../lib/money.ts';
  * because the iPhone decimal keypad has no minus key.
  * @returns minor units (≥ 0), or null if it isn't a valid amount
  */
-export function parseStartingBalance(input: string): number | null {
-  const cleaned = input.trim().replace(/^₱/, '').replace(/,/g, '').trim();
-  if (/^0*(\.0{0,2})?$/.test(cleaned)) return 0; // "", "0", "0.00", "."
-  return parseAmountToMinor(cleaned);
-}
+export const parseStartingBalance = parseOptionalAmountToMinor;
 
 /** Add/edit wallet form rules (mirrored in walletRepository for safety). */
 export const walletFormSchema = z.object({

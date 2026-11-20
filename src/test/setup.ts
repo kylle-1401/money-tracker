@@ -5,6 +5,7 @@ import 'fake-indexeddb/auto';
 import { afterEach, beforeEach } from 'vitest';
 import { cleanup, configure } from '@testing-library/react';
 import { db } from '../db/db.ts';
+import { dismissBudgetAlerts } from '../features/budget/budgetAlerts.ts';
 
 // findBy*/waitFor give up after 1s by default. Pages wait on several IndexedDB live
 // queries, and on a slow or busy machine (CI) that can take longer; one flaky
@@ -21,4 +22,6 @@ beforeEach(async () => {
 // Vitest globals are off, so Testing Library can't auto-register its cleanup.
 afterEach(() => {
   cleanup();
+  // The budget alert store lives in module memory; don't leak alerts between tests.
+  dismissBudgetAlerts();
 });

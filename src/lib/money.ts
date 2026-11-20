@@ -32,6 +32,17 @@ export function parseAmountToMinor(input: string): number | null {
   return minor;
 }
 
+/**
+ * Parses an optional amount (a fee, a starting balance, a budget): empty or zero
+ * means 0, anything else follows {@link parseAmountToMinor}.
+ * @returns minor units ≥ 0, or null if it isn't a valid amount
+ */
+export function parseOptionalAmountToMinor(input: string): number | null {
+  const cleaned = input.trim().replace(/^₱/, '').replace(/,/g, '').trim();
+  if (/^0*(\.0{0,2})?$/.test(cleaned)) return 0; // "", "0", "0.00", "."
+  return parseAmountToMinor(cleaned);
+}
+
 const formatters = new Map<string, Intl.NumberFormat>();
 
 /**

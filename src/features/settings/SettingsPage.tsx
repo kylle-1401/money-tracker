@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import BackupSection from '../backup/BackupSection.tsx';
+import BudgetSection from '../budget/BudgetSection.tsx';
 import { useLiveQuery } from 'dexie-react-hooks';
 import PageHeader from '../../components/PageHeader.tsx';
 import type { CategoryType } from '../../db/types.ts';
@@ -14,18 +15,20 @@ import { useWallets } from '../wallets/hooks.ts';
 import { walletBalances } from '../dashboard/summary.ts';
 import styles from './SettingsPage.module.css';
 
-/** Settings tab: wallets, display currency, backup, and the category lists. */
+/** Settings tab: wallets, monthly budget, display currency, backup, and the category lists. */
 export default function SettingsPage() {
   const currency = useCurrency();
   const [currencyError, setCurrencyError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
-  const focusBackup = searchParams.get('focus') === 'backup';
+  // Home links here with ?focus=backup (reminder) or ?focus=budget ("Set a budget").
+  // Allow-listed: the value picks an element id, so nothing else is accepted.
+  const requestedFocus = searchParams.get('focus');
+  const focus = requestedFocus === 'backup' || requestedFocus === 'budget' ? requestedFocus : null;
 
-  // The Home backup reminder links here with ?focus=backup.
   useEffect(() => {
     // Optional call: scrollIntoView is missing in some test DOMs (jsdom).
-    if (focusBackup) document.getElementById('backup')?.scrollIntoView?.({ block: 'start' });
-  }, [focusBackup]);
+    if (focus) document.getElementById(focus)?.scrollIntoView?.({ block: 'start' });
+  }, [focus]);
 
   async function changeCurrency(code: string) {
     setCurrencyError(null);
@@ -41,6 +44,8 @@ export default function SettingsPage() {
       <PageHeader title="Settings" />
 
       <WalletSection />
+
+      <BudgetSection />
 
       <section className={styles.section} aria-labelledby="currency-heading">
         <h2 id="currency-heading" className={styles.sectionTitle}>
@@ -141,6 +146,7 @@ function WalletSection() {
 /** One type's categories (active, then archived) with an "Add category" row. */
 function CategorySection({ type, title }: { type: CategoryType; title: string }) {
   const categories = useLiveQuery(() => listCategories(type), [type]);
+  const currency = useCurrency();
   const headingId = `${type}-categories-heading`;
 
   return (
@@ -165,6 +171,9 @@ function CategorySection({ type, title }: { type: CategoryType; title: string })
                 </span>
                 <span className={styles.name}>{c.name}</span>
                 {c.archived && <span className={styles.badge}>Archived</span>}
+                {c.budgetMinor !== undefined && (
+                  <span className={styles.amount}>{formatMinor(c.budgetMinor, currency)}/mo</span>
+                )}
                 <span className={styles.chevron} aria-hidden="true">
                   ›
                 </span>

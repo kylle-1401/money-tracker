@@ -12,9 +12,13 @@ import {
   countTransactionsInCategory,
   deleteCategory,
   setCategoryArchived,
+  setCategoryBudget,
   updateCategory,
 } from './categoryRepository.ts';
 import { categoryFormSchema, SUGGESTED_EMOJIS, type CategoryFormValues } from './categorySchema.ts';
+import { minorToInput, parseOptionalAmountToMinor } from '../../lib/money.ts';
+import { useCurrency } from './currencyContext.ts';
+import { currencySymbol } from './currencies.ts';
 import forms from '../../components/forms.module.css';
 import styles from './CategoryFormPage.module.css';
 
@@ -59,11 +63,14 @@ export default function CategoryFormPage() {
   const typeLabel = type === 'income' ? 'income' : 'expense';
 
   async function save(values: CategoryFormValues) {
-    if (existing) {
-      await updateCategory(existing.id, values);
-    } else {
-      await addCategory(type, values);
-    }
+    const input = { name: values.name, emoji: values.emoji };
+    const budget = parseOptionalAmountToMinor(values.budget) ?? 0;
+    // One transaction: the name and the budget are saved together or not at all.
+    await db.transaction('rw', db.categories, async () => {
+      const id = existing ? existing.id : await addCategory(type, input);
+      if (existing) await updateCategory(existing.id, input);
+      if (type === 'expense') await setCategoryBudget(id, budget > 0 ? budget : null);
+    });
     goBack();
   }
 
@@ -87,8 +94,13 @@ export default function CategoryFormPage() {
     >
       <CategoryForm
         key={existing?.id ?? 'new'}
-        defaultValues={{ name: existing?.name ?? '', emoji: existing?.emoji ?? '' }}
+        defaultValues={{
+          name: existing?.name ?? '',
+          emoji: existing?.emoji ?? '',
+          budget: existing?.budgetMinor ? minorToInput(existing.budgetMinor) : '',
+        }}
         submitLabel={isEdit ? 'Save changes' : 'Add category'}
+        showBudget={type === 'expense'}
         onSubmit={save}
       />
 
@@ -122,11 +134,17 @@ export default function CategoryFormPage() {
 interface CategoryFormProps {
   defaultValues: CategoryFormValues;
   submitLabel: string;
+  /** Expense categories can have a monthly budget. */
+  showBudget: boolean;
   onSubmit: (values: CategoryFormValues) => Promise<void>;
 }
 
-/** Name plus icon: tap a suggested emoji or type your own with the emoji keyboard. */
-function CategoryForm({ defaultValues, submitLabel, onSubmit }: CategoryFormProps) {
+/**
+ * Name plus icon (tap a suggested emoji or type your own), and for expense
+ * categories an optional monthly budget.
+ */
+function CategoryForm({ defaultValues, submitLabel, showBudget, onSubmit }: CategoryFormProps) {
+  const symbol = currencySymbol(useCurrency());
   const {
     register,
     control,
@@ -213,6 +231,39 @@ function CategoryForm({ defaultValues, submitLabel, onSubmit }: CategoryFormProp
           </p>
         )}
       </fieldset>
+
+      {showBudget && (
+        <div className={styles.field}>
+          <label htmlFor="category-budget" className={styles.label}>
+            Monthly budget <span className={styles.optional}>(optional)</span>
+          </label>
+          <div className={styles.budgetWrap}>
+            <span aria-hidden="true" className={styles.budgetSymbol}>
+              {symbol}
+            </span>
+            <input
+              id="category-budget"
+              className={styles.budgetInput}
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="No budget"
+              aria-invalid={errors.budget ? true : undefined}
+              aria-describedby={errors.budget ? 'category-budget-error' : 'category-budget-hint'}
+              {...register('budget')}
+            />
+          </div>
+          {errors.budget ? (
+            <p id="category-budget-error" className={styles.error} role="alert">
+              {errors.budget.message}
+            </p>
+          ) : (
+            <p id="category-budget-hint" className={styles.subLabel}>
+              You’ll get a warning at 80% and when you go over.
+            </p>
+          )}
+        </div>
+      )}
 
       <button type="submit" className={styles.primary} disabled={isSubmitting}>
         {isSubmitting ? 'Saving…' : submitLabel}

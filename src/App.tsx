@@ -9,6 +9,7 @@ import CategoryFormPage from './features/settings/CategoryFormPage.tsx';
 import WalletFormPage from './features/wallets/WalletFormPage.tsx';
 import CurrencyProvider from './features/settings/CurrencyProvider.tsx';
 import UpdatePrompt from './features/pwa/UpdatePrompt.tsx';
+import BudgetAlert from './features/budget/BudgetAlert.tsx';
 
 /**
  * Route table. The router itself (HashRouter) is provided by main.tsx so tests can
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <UpdatePrompt />
+        <BudgetAlert />
       </CurrencyProvider>
     </ErrorBoundary>
   );

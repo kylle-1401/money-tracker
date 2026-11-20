@@ -4,7 +4,8 @@ import { CASH_WALLET_ID, defaultCategories, defaultWallet } from '../../db/seed.
 import type { Category, Wallet } from '../../db/types.ts';
 import { addWallet, setWalletArchived } from '../wallets/walletRepository.ts';
 import { addTransaction } from '../transactions/transactionRepository.ts';
-import { addCategory } from '../settings/categoryRepository.ts';
+import { addCategory, setCategoryBudget } from '../settings/categoryRepository.ts';
+import { getMonthlyBudget, setMonthlyBudget } from '../budget/budgetRepository.ts';
 import { getCurrency, setCurrency } from '../settings/settingsRepository.ts';
 import { parseBackup, serializeBackup } from './backupFormat.ts';
 import {
@@ -365,6 +366,67 @@ describe('backup wallets (v2)', () => {
     await importBackup(backup, 'merge');
 
     expect((await db.wallets.get(id))?.archived).toBe(false); // backup version wins
+  });
+});
+
+describe('backup budgets (v4)', () => {
+  it('Replace_RestoresMonthlyAndCategoryBudgets', async () => {
+    await setMonthlyBudget(1_200_000);
+    await setCategoryBudget('expense-food', 600_000);
+    const text = serializeBackup(await createBackup());
+    await db.delete();
+    await db.open();
+
+    const parsed = parseBackup(text);
+    if (!parsed.ok) throw new Error(parsed.error);
+    await importBackup(parsed.backup, 'replace');
+
+    expect(await getMonthlyBudget()).toBe(1_200_000);
+    expect((await db.categories.get('expense-food'))?.budgetMinor).toBe(600_000);
+  });
+
+  it('Replace_BackupWithoutBudget_RemovesThisPhonesBudget', async () => {
+    const backup = await createBackup(); // no budget yet
+    await setMonthlyBudget(500_000);
+
+    await importBackup(backup, 'replace');
+
+    expect(await getMonthlyBudget()).toBeNull();
+  });
+
+  it('Merge_OlderBackupWithoutBudget_KeepsThisPhonesCategoryBudget', async () => {
+    const october = await createBackup(); // no Food budget yet
+    await setCategoryBudget('expense-food', 500_000);
+
+    await importBackup(october, 'merge');
+
+    expect((await db.categories.get('expense-food'))?.budgetMinor).toBe(500_000);
+  });
+
+  it('Merge_BackupHasBudgetPhoneHasNone_TakesTheBackups', async () => {
+    const backup = await createBackup();
+    const food = backup.categories.find((c) => c.id === 'expense-food');
+    if (!food) throw new Error('seed missing');
+    food.budgetMinor = 300_000;
+
+    await importBackup(backup, 'merge');
+
+    expect((await db.categories.get('expense-food'))?.budgetMinor).toBe(300_000);
+  });
+
+  it('Merge_NeitherHasBudget_NoBudgetField', async () => {
+    await importBackup(await createBackup(), 'merge');
+    expect(await db.categories.get('expense-food')).not.toHaveProperty('budgetMinor');
+  });
+
+  it('Merge_KeepsThisPhonesMonthlyBudget', async () => {
+    await setMonthlyBudget(500_000);
+    const backup = await createBackup();
+    backup.monthlyBudgetMinor = 9_900_000;
+
+    await importBackup(backup, 'merge');
+
+    expect(await getMonthlyBudget()).toBe(500_000);
   });
 });
 

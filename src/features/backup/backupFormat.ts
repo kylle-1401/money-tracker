@@ -24,8 +24,11 @@ import { DEFAULT_CURRENCY, isSupportedCurrency } from '../settings/currencies.ts
  * - v3 (slice 8): transactions may be transfers (type "transfer", no category,
  *   toWalletId, optional feeMinor). Bumped so a slice-7 app refuses these files with
  *   "made by a newer version" instead of calling them damaged.
+ * - v4 (slice 9): optional monthlyBudgetMinor, and optional budgetMinor on expense
+ *   categories. Bumped so an older app refuses the file instead of silently
+ *   dropping the budgets.
  */
-export const BACKUP_VERSION = 3;
+export const BACKUP_VERSION = 4;
 export const BACKUP_APP_ID = 'money-tracker';
 
 /**
@@ -48,6 +51,8 @@ export interface Backup {
   version: number;
   exportedAt: string;
   currency: string;
+  /** Overall monthly budget (v4); absent = none. */
+  monthlyBudgetMinor?: number;
   categories: Category[];
   wallets: Wallet[];
   transactions: Transaction[];
@@ -69,6 +74,7 @@ const categorySchema = z.object({
   color: z.string().max(20).catch('#64748b'),
   archived: z.boolean(),
   sortOrder: z.number().int().min(0).max(100_000),
+  budgetMinor: z.number().int().min(1).max(MAX_AMOUNT_MINOR).optional(),
 });
 
 const walletSchema = z.object({
@@ -105,6 +111,7 @@ const backupSchema = z
     version: z.number().int().min(1),
     exportedAt: z.string().max(40),
     currency: z.string().refine(isSupportedCurrency).catch(DEFAULT_CURRENCY),
+    monthlyBudgetMinor: z.number().int().min(1).max(MAX_AMOUNT_MINOR).optional(),
     categories: z.array(categorySchema).max(MAX_CATEGORIES),
     wallets: z.array(walletSchema).min(1).max(MAX_WALLETS),
     transactions: z.array(transactionSchema).max(MAX_TRANSACTIONS),
@@ -123,6 +130,10 @@ const backupSchema = z
     }
     if (backup.transactions.some((t) => !walletIds.has(t.walletId))) {
       ctx.addIssue({ code: 'custom', message: 'A transaction uses a missing wallet' });
+    }
+    // Same rule as setCategoryBudget: only expense categories have a budget.
+    if (backup.categories.some((c) => c.budgetMinor !== undefined && c.type !== 'expense')) {
+      ctx.addIssue({ code: 'custom', message: 'An income category has a budget' });
     }
     const categoryTypes = new Map(backup.categories.map((c) => [c.id, c.type]));
     if (categoryTypes.size !== backup.categories.length) {

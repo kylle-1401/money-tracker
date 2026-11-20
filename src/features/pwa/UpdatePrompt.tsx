@@ -23,9 +23,13 @@ export default function UpdatePrompt() {
 
   return (
     <div className={styles.toast} role="status">
-      <p className={styles.text}>
-        {needRefresh ? 'A new version is ready.' : 'Ready to work offline.'}
-      </p>
+      <div className={styles.text}>
+        <p>{needRefresh ? 'A new version is ready.' : 'Ready to work offline.'}</p>
+        {needRefresh && (
+          // Updates can upgrade how data is stored (one way), so suggest a backup first.
+          <p className={styles.sub}>Tip: save a backup in Settings first.</p>
+        )}
+      </div>
       {needRefresh && (
         <button
           type="button"

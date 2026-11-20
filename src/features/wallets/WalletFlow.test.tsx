@@ -162,10 +162,10 @@ describe('Wallets on Home and in the entry form', () => {
     renderAt('/transactions/new');
 
     const paidFrom = await screen.findByRole('group', { name: 'Paid from' });
-    expect(within(paidFrom).getByRole('radio', { name: 'Cash' })).toBeChecked();
+    expect(await within(paidFrom).findByRole('radio', { name: 'Cash' })).toBeChecked();
     await user.click(within(paidFrom).getByRole('radio', { name: 'GCash' }));
     await user.type(screen.getByLabelText('Amount'), '50');
-    await user.click(screen.getByRole('radio', { name: /Food/ }));
+    await user.click(await screen.findByRole('radio', { name: /Food/ }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     await screen.findByRole('heading', { level: 1, name: 'Transactions' });
@@ -173,7 +173,7 @@ describe('Wallets on Home and in the entry form', () => {
 
     await user.click(screen.getByRole('link', { name: 'Add transaction' }));
     const again = await screen.findByRole('group', { name: 'Paid from' });
-    expect(within(again).getByRole('radio', { name: /GCash/ })).toBeChecked();
+    expect(await within(again).findByRole('radio', { name: 'GCash' })).toBeChecked();
   });
 
   it('AddEntry_Income_LabelSaysReceivedIn', async () => {

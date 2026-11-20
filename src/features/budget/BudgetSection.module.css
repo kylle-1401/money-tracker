@@ -1,0 +1,91 @@
+/* Matches the iOS Settings-style sections in SettingsPage.module.css */
+.section {
+  margin-top: var(--space-6);
+}
+
+.sectionTitle {
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.rowLabel {
+  flex-shrink: 0;
+}
+
+.amountWrap {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 120px;
+}
+
+.symbol {
+  color: var(--text-muted);
+}
+
+.amount {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-min);
+  border: 0;
+  background: transparent;
+  font-size: var(--text-md); /* >=16px: no iOS zoom on focus */
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.save {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: var(--text-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hint,
+.success,
+.error {
+  margin-top: var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.hint {
+  color: var(--text-muted);
+}
+
+.group .success,
+.group .error {
+  flex-basis: 100%;
+  margin-top: 0;
+}
+
+.success {
+  color: var(--income);
+}
+
+.error {
+  color: var(--expense);
+  font-weight: 500;
+}

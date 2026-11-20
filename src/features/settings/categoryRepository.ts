@@ -1,6 +1,7 @@
 import { db } from '../../db/db.ts';
 import type { Category, CategoryType } from '../../db/types.ts';
 import { normalizeName, stripUnsafeChars } from '../../lib/text.ts';
+import { isValidBudget } from '../budget/budgetRepository.ts';
 
 /** What the user can set on a category. Type is fixed once created (see addCategory). */
 export interface CategoryInput {
@@ -61,6 +62,27 @@ export async function updateCategory(id: string, raw: CategoryInput): Promise<vo
   const input = normalize(raw);
   await assertValid(input, existing.type, id);
   await db.categories.update(id, input);
+}
+
+/**
+ * Sets an expense category's monthly budget, or removes it with null. Income
+ * categories can't have one (a budget limits spending).
+ */
+export async function setCategoryBudget(id: string, budgetMinor: number | null): Promise<void> {
+  await db.transaction('rw', db.categories, async () => {
+    const existing = await db.categories.get(id);
+    if (!existing) throw new Error('This category no longer exists.');
+    if (budgetMinor === null) {
+      // put a copy without the field (rather than update) so the property is really gone.
+      const rest: typeof existing = { ...existing };
+      delete rest.budgetMinor;
+      await db.categories.put(rest);
+      return;
+    }
+    if (existing.type !== 'expense') throw new Error('Only expense categories have a budget.');
+    if (!isValidBudget(budgetMinor)) throw new Error('Enter a budget above 0, up to 2 decimals.');
+    await db.categories.update(id, { budgetMinor });
+  });
 }
 
 /** Hides a category from the picker (or brings it back). History keeps using it. */

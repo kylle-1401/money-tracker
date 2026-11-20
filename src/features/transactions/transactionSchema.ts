@@ -1,16 +1,9 @@
 import { z } from 'zod';
 import { isValidDateString } from '../../lib/dates.ts';
-import { parseAmountToMinor } from '../../lib/money.ts';
+import { parseAmountToMinor, parseOptionalAmountToMinor } from '../../lib/money.ts';
 
-/**
- * Parses the optional transfer fee as typed: empty or zero means no fee.
- * @returns minor units (≥ 0), or null if it isn't a valid amount
- */
-export function parseFee(input: string): number | null {
-  const cleaned = input.trim().replace(/^₱/, '').replace(/,/g, '').trim();
-  if (/^0*(\.0{0,2})?$/.test(cleaned)) return 0; // "", "0", "0.00"
-  return parseAmountToMinor(cleaned);
-}
+/** Parses the optional transfer fee as typed: empty or zero means no fee. */
+export const parseFee = parseOptionalAmountToMinor;
 
 /**
  * Add/edit form rules. Amounts stay strings here (what the user typed) and are

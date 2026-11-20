@@ -22,6 +22,11 @@
   font-weight: 600;
 }
 
+.sub {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
 .primary,
 .close {
   min-height: var(--tap-min);

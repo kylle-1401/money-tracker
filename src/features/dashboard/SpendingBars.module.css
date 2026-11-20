@@ -48,6 +48,17 @@
   overflow: hidden;
 }
 
+.budget {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.budgetOver {
+  color: var(--expense);
+  font-weight: 600;
+}
+
 .bar {
   height: 100%;
   border-radius: 0 4px 4px 0;

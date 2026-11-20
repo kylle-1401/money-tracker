@@ -19,6 +19,11 @@ export interface Category {
   /** Business rule: categories that have transactions are archived, not deleted. */
   archived: boolean;
   sortOrder: number;
+  /**
+   * Optional monthly budget in minor units (slice 9), expense categories only.
+   * Absent = no budget. Not indexed, so adding it needed no schema version.
+   */
+  budgetMinor?: number;
 }
 
 /** Card accent colors a wallet can use (a fixed set, mapped to CSS in WalletCards). */

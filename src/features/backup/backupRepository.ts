@@ -2,6 +2,7 @@ import { db } from '../../db/db.ts';
 import { CASH_WALLET_ID, defaultCategories } from '../../db/seed.ts';
 import type { Category, Transaction, Wallet } from '../../db/types.ts';
 import { getCurrency, setCurrency } from '../settings/settingsRepository.ts';
+import { getMonthlyBudget, setMonthlyBudget } from '../budget/budgetRepository.ts';
 import {
   BACKUP_APP_ID,
   BACKUP_VERSION,
@@ -14,17 +15,19 @@ const LAST_BACKUP_KEY = 'lastBackupAt';
 
 /** Snapshot of everything on this device, ready to save as a backup file. */
 export async function createBackup(now = new Date()): Promise<Backup> {
-  const [categories, wallets, transactions, currency] = await Promise.all([
+  const [categories, wallets, transactions, currency, monthlyBudget] = await Promise.all([
     db.categories.toArray(),
     db.wallets.toArray(),
     db.transactions.toArray(),
     getCurrency(),
+    getMonthlyBudget(),
   ]);
   return {
     app: BACKUP_APP_ID,
     version: BACKUP_VERSION,
     exportedAt: now.toISOString(),
     currency,
+    ...(monthlyBudget !== null ? { monthlyBudgetMinor: monthlyBudget } : {}),
     categories,
     wallets,
     transactions,
@@ -87,6 +90,9 @@ export async function importBackup(backup: Backup, mode: ImportMode): Promise<Im
       await db.wallets.bulkAdd(backup.wallets);
       await db.transactions.bulkAdd(backup.transactions);
       await setCurrency(backup.currency);
+      // Replace restores the backup's monthly budget (or none); merge keeps this
+      // phone's, like the currency.
+      await setMonthlyBudget(backup.monthlyBudgetMinor ?? null);
       return {
         transactions: backup.transactions.length,
         transactionsAdded: backup.transactions.length,
@@ -135,14 +141,17 @@ export async function importBackup(backup: Backup, mode: ImportMode): Promise<Im
         continue;
       }
 
+      // Budgets are this phone's settings: merge keeps a local category budget, like the
+      // monthly budget and currency (the backup's only fills in when there's none here).
+      const merged = withBudget(category, local.budgetMinor ?? category.budgetMinor);
       if (owner !== undefined && owner !== category.id) {
         // Same id, renamed in the backup to a name another category already uses:
         // keep the local name so names stay unique.
-        toPut.push({ ...category, name: local.name });
+        toPut.push({ ...merged, name: local.name });
       } else {
         byName.delete(nameKey(local));
         byName.set(key, category.id);
-        toPut.push(category);
+        toPut.push(merged);
       }
     }
 
@@ -238,6 +247,14 @@ async function assertWithinCaps(walletTotal: number, incomingTxIds: readonly str
       'Adding this backup would go over the app’s limit for wallets or transactions. Use “Replace all my data” instead.',
     );
   }
+}
+
+/** A copy of the category with this budget, or with no budget field at all. */
+function withBudget(category: Category, budgetMinor: number | undefined): Category {
+  const copy: Category = { ...category };
+  if (budgetMinor === undefined) delete copy.budgetMinor;
+  else copy.budgetMinor = budgetMinor;
+  return copy;
 }
 
 function nameKey(c: Pick<Category, 'type' | 'name'>): string {
